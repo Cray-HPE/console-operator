@@ -1,0 +1,88 @@
+# Please refer to https://stash.us.cray.com/projects/CLOUD/repos/cray-charts/browse/stable/cray-service/values.yaml?at=refs%2Fheads%2Fmaster
+# for more info on values you can set/override
+# Note that cray-service.containers[*].image and cray-service.initContainers[*].image map values are one of the only structures that
+# differ from the standard kubernetes container spec:
+# image:
+#   repository: ""
+#   tag: "" (default = "latest")
+#   pullPolicy: "" (default = "IfNotPresent")
+
+console_operator_config:
+  cray_console_log_identifier: 'ID'
+  cray_console_smd_url: 'http://cray-smd'
+  cray_console_rf_endpoint: 'hsm/v1/Inventory/RedfishEndpoints'
+
+cray-service:
+  type: Deployment
+  nameOverride: cray-console-operator
+  containers:
+    cray-console-operator:
+      name: cray-console-operator
+      image:
+        repository: cray/cray-console-operator
+      resources:
+        limits:
+          cpu: "4"
+          memory: 4Gi
+        requests:
+          cpu: 100m
+          memory: 64Mi
+      env:
+      - name: LOG_ROT_ENABLE
+        value: "True"
+      - name: LOG_ROT_FILE_SIZE
+        value: "5M"
+      - name: LOG_ROT_SEC_FREQ
+        value: "600"
+      - name: LOG_ROT_NUM_KEEP
+        value: "2"
+      envFrom:
+      - configMapRef:
+          name: console-operator-config
+      volumeMounts:
+      - mountPath: /var/log/
+        name: cray-console-logs
+      livenessProbe:
+        exec:
+          command:
+          - cat
+          - /etc/conman.conf
+        initialDelaySeconds: 15
+        periodSeconds: 10
+      readinessProbe:
+        exec:
+          command:
+          - grep
+          - 'console'
+          - /etc/conman.conf
+        initialDelaySeconds: 20
+        periodSeconds: 10
+    log-forwarding:
+      name: log-forwarding
+      image:
+        repository: baseos/alpine
+        tag: 3.12.0
+      args: [/bin/sh, -c, 'tail -n 0 -F /var/log/conman/consoleAgg.log']
+      volumeMounts:
+      - name: cray-console-logs
+        mountPath: /var/log
+  volumes:
+    cray-console-logs:
+      name: cray-console-logs
+      persistentVolumeClaim:
+        claimName: cray-console-operator-data-claim
+  storageClass: ceph-cephfs-external
+  persistentVolumeClaims:
+    data-claim:
+      name: data-claim # will be prefixed with cray-console-operator
+      accessModes:
+      - ReadWriteMany
+      resources:
+        requests:
+          storage: 100Gi
+  ingress:
+    enabled: true
+    uri: " "
+    prefix: /apis/console
+  strategy:
+    type: Recreate

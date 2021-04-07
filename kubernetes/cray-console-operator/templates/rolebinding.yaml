@@ -1,0 +1,29 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cray-console-operator
+  namespace: services
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cray-console-operator
+subjects:
+  - kind: ServiceAccount
+    name: cray-console-operator
+    namespace: services
+---
+# cray-console-operator pod needs to run as root
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cray-console-opertator-psp
+  namespace: services
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: privileged-psp
+subjects:
+  - kind: ServiceAccount
+    name: cray-console-operator
+    namespace: services
