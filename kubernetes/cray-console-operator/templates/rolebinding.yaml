@@ -17,7 +17,7 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: cray-console-opertator-psp
+  name: cray-console-operator-psp
   namespace: services
 roleRef:
   apiGroup: rbac.authorization.k8s.io
