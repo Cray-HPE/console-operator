@@ -27,19 +27,10 @@ cray-service:
       resources:
         limits:
           cpu: "4"
-          memory: 4Gi
+          memory: 1Gi
         requests:
           cpu: 100m
           memory: 64Mi
-      env:
-      - name: LOG_ROT_ENABLE
-        value: "True"
-      - name: LOG_ROT_FILE_SIZE
-        value: "5M"
-      - name: LOG_ROT_SEC_FREQ
-        value: "600"
-      - name: LOG_ROT_NUM_KEEP
-        value: "2"
       envFrom:
       - configMapRef:
           name: console-operator-config
