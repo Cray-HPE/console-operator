@@ -8,7 +8,7 @@ dockerBuildPipeline {
     imagePrefix = "cray"
     product = "csm"
     
-    githubPushRepo = "Cray-HPE/cms-console-operator"
+    githubPushRepo = "Cray-HPE/console-operator"
     /*
         By default all branches are pushed to GitHub
 

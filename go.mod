@@ -1,4 +1,4 @@
-module stash.us.cray.com/SCMS/cms-console-operator
+module stash.us.cray.com/SCMS/console-operator
 
 go 1.13
 
