@@ -53,6 +53,7 @@ RUN set -eux \
 # Copy in the needed files
 COPY --from=build /app/console_operator /app/
 COPY scripts/console-ssh-keygen /app/console-ssh-keygen
+COPY scripts/get-node /app/get-node
 
 # Environment Variables -- Used by the HMS secure storage pkg
 ENV VAULT_ADDR="http://cray-vault.vault:8200"

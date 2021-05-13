@@ -34,6 +34,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 )
@@ -66,6 +67,10 @@ var maxRvrNodesPerPod int = 2000
 // Global var to control how often we check for hardware changes
 var newHardwareCheckPeriodSec int = 30
 var hardwareUpdateTime string = "Unknown"
+
+// Global vars to control checking for stale heartbeats
+var heartbeatStaleMinutes int = 3
+var heartbeatCheckPeriodSec int = 15
 
 // Global var to signal we are shutting down and prevent periodic checks from happening
 var inShutdown bool = false
@@ -232,11 +237,53 @@ func watchHardware() {
 	}
 }
 
+// Function to read a single env variable into a variable with min/max checks
+func readSingleEnvVarInt(envVar string, outVar *int, minVal, maxVal int) {
+	// get the env var for maximum number of mountain nodes per pod
+	if v := os.Getenv(envVar); v != "" {
+		log.Printf("Found %s env var: %s", envVar, v)
+		vi, err := strconv.Atoi(v)
+		if err != nil {
+			log.Printf("Error converting value for %s - expected an integer:%s", envVar, err)
+		} else {
+			// do some sanity checking
+			if vi < minVal {
+				log.Printf("Defaulting %s to minimum value:%d", envVar, minVal)
+				vi = minVal
+			}
+			if vi > maxVal {
+				log.Printf("Defaulting %s to maximum value:%d", envVar, maxVal)
+				vi = maxVal
+			}
+			*outVar = vi
+		}
+	}
+}
+
 // Main loop for the application
 func main() {
 	// parse the command line flags to the application
 	flag.BoolVar(&debugOnly, "debug", false, "Run in debug only mode, not starting conmand")
 	flag.Parse()
+
+	log.Printf("Initial value of maxMtnNodesPerPod: %d", maxMtnNodesPerPod)
+	log.Printf("Initial value of maxRvrNodesPerPod: %d", maxRvrNodesPerPod)
+	log.Printf("Initial value of newHardwareCheckPeriodSec: %d", newHardwareCheckPeriodSec)
+	log.Printf("Initial value of heartbeatCheckPeriodSec: %d", heartbeatCheckPeriodSec)
+	log.Printf("Initial value of heartbeatStaleMinutes: %d", heartbeatStaleMinutes)
+
+	// read the env variables into global vars with min/max sanity checks
+	readSingleEnvVarInt("MAX_MTN_NODES_PER_POD", &maxMtnNodesPerPod, 5, 1500)
+	readSingleEnvVarInt("MAX_RVR_NODES_PER_POD", &maxRvrNodesPerPod, 5, 4000)
+	readSingleEnvVarInt("HARDWARE_UPDATE_SEC_FREQ", &newHardwareCheckPeriodSec, 10, 14400) // 10 sec -> 4 hrs
+	readSingleEnvVarInt("HEARTBEAT_CHECK_SEC_FREQ", &heartbeatCheckPeriodSec, 10, 300)     // 10 sec -> 5 min
+	readSingleEnvVarInt("HEARTBEAT_STALE_DURATION_MINUTES", &heartbeatStaleMinutes, 1, 60) // 1 min -> 60 min
+
+	log.Printf("Final value of maxMtnNodesPerPod: %d", maxMtnNodesPerPod)
+	log.Printf("Final value of maxRvrNodesPerPod: %d", maxRvrNodesPerPod)
+	log.Printf("Final value of newHardwareCheckPeriodSec: %d", newHardwareCheckPeriodSec)
+	log.Printf("Final value of heartbeatCheckPeriodSec: %d", heartbeatCheckPeriodSec)
+	log.Printf("Final value of heartbeatStaleMinutes: %d", heartbeatStaleMinutes)
 
 	// log the fact if we are in debug mode
 	if debugOnly {

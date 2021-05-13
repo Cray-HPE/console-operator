@@ -39,7 +39,7 @@ import (
 // Variable to hold address of console-data service
 var dataAddrBase string = "http://cray-console-data/v1"
 
-// function to interact with console-data api to add new noded to the db
+// function to interact with console-data api to add new nodes to the db
 func dataAddNodes(newNodes []nodeConsoleInfo) bool {
 	// return if there was a successful response from console-data
 	retVal := false
@@ -73,8 +73,6 @@ func dataAddNodes(newNodes []nodeConsoleInfo) bool {
 	err = json.Unmarshal(rd, &rp)
 	if err != nil {
 		// handle error
-		// TODO - better error handling?  Do we need a retry so if something fails
-		//  it won't get out of sync??
 		log.Printf("Error unmarshalling data: %s, bytesArray:%s", err, rd)
 	} else {
 		log.Printf("Console-data return message: %s", rp.message)
@@ -128,15 +126,10 @@ func dataRemoveNodes(removedNodes []nodeConsoleInfo) {
 
 // trigger a clearing of nodes from a stale pod
 func checkHeartbeats() {
-	// set the stale time to be 3 min
-	const staleMinutes int = 3
-
-	// Check for stale heartbeats every 15 sec
-	const checkHeartbeatsSec int = 15
-
 	for {
+		log.Printf("Checking for stale heartbeats")
 		// format the url for the clear API
-		url := fmt.Sprintf("%s/consolepod/%d/clear", dataAddrBase, staleMinutes)
+		url := fmt.Sprintf("%s/consolepod/%d/clear", dataAddrBase, heartbeatStaleMinutes)
 
 		// call the console-data api
 		_, _, err := deleteURL(url, nil, nil)
@@ -145,7 +138,7 @@ func checkHeartbeats() {
 		}
 
 		// wait for the next interval
-		time.Sleep(time.Duration(checkHeartbeatsSec) * time.Second)
+		time.Sleep(time.Duration(heartbeatCheckPeriodSec) * time.Second)
 
 	}
 }

@@ -208,14 +208,24 @@ func updateNodeCounts(numMtnNodes, numRvrNodes int) {
 	log.Printf("Mountain current: %d, max per node: %d", numMtnNodes, maxMtnNodesPerPod)
 	log.Printf("River    current: %d, max per node: %d", numRvrNodes, maxRvrNodesPerPod)
 
+	// bail if there hasn't been anything reported yet - don't want to change
+	// replica count when hsm hasn't been populated (or contacted) yet
+	if numMtnNodes+numRvrNodes == 0 {
+		log.Printf("No nodes found, skipping count update")
+		return
+	}
+
+	// lets be extra paranoid about divide by zero issues...
+	mm := math.Max(float64(maxMtnNodesPerPod), 1)
+	mr := math.Max(float64(maxRvrNodesPerPod), 1)
+
 	// calculate number of pods needed for mountain and river nodes, choose max
-	numMtnReq := int(math.Ceil(float64(numMtnNodes)/float64(maxMtnNodesPerPod)) + 1)
-	numRvrReq := int(math.Ceil(float64(numRvrNodes)/float64(maxRvrNodesPerPod)) + 1)
+	numMtnReq := int(math.Ceil(float64(numMtnNodes)/mm) + 1)
+	numRvrReq := int(math.Ceil(float64(numRvrNodes)/mr) + 1)
 	newNumPods := numMtnReq
 	if numRvrReq > newNumPods {
 		newNumPods = numRvrReq
 	}
-	//log.Printf("New number of node pods: %d, mtnReq: %d, rvrReq: %d", newNumPods, numMtnReq, numRvrReq)
 
 	// update the number of nodes / pod based on number of pods
 	updateReplicaCount(newNumPods)

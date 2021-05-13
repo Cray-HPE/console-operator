@@ -31,6 +31,17 @@ cray-service:
         requests:
           cpu: 100m
           memory: 64Mi
+      env:
+      - name: MAX_MTN_NODES_PER_POD
+        value: "750"
+      - name: MAX_RVR_NODES_PER_POD
+        value: "2000"
+      - name: HARDWARE_UPDATE_SEC_FREQ
+        value: "30"
+      - name: HEARTBEAT_CHECK_SEC_FREQ
+        value: "15"
+      - name: HEARTBEAT_STALE_DURATION_MINUTES
+        value: "3"
       envFrom:
       - configMapRef:
           name: console-operator-config

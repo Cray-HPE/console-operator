@@ -37,19 +37,22 @@ import (
 // HealthResponse - used to report service health stats
 type HealthResponse struct {
 	NumberConsoles       string `json:"consoles"`
+	HardwareUpdateSec    string `json:"hardwareupdatesec"`
 	LastHardwareUpdate   string `json:"hardwareupdate"`
 	NumberNodePods       string `json:"nodepods"`
 	NumberRvrNodesPerPod string `json:"rvrnodesperpod"`
 	NumberMtnNodesPerPod string `json:"mtnnodesperpod"`
 	MaxRvrNodesPerPod    string `json:"maxrvrnodesperpod"`
 	MaxMtnNodesPerPod    string `json:"maxmtnnodesperpod"`
+	HeartbeatCheckSec    string `json:"heartbeatcheck"`
+	HeartbeatStaleMin    string `json:"heartbeatstale"`
 }
 
 // Function to output contents of the struct as a string
-func (hr HealthResponse) String() string {
-	return fmt.Sprintf("NumConsoles: %s, LastUpdate: %s, NumNodePods: %s, NumRvrNodesPerPod: %s, NumMtnNodesPerPod: %s, MaxRiverNodesPerPod: %s, MaxMtnNodesPerPod: %s",
-		hr.NumberConsoles, hr.LastHardwareUpdate, hr.NumberNodePods, hr.NumberRvrNodesPerPod, hr.NumberMtnNodesPerPod, hr.MaxRvrNodesPerPod, hr.MaxMtnNodesPerPod)
-}
+//func (hr HealthResponse) String() string {
+//	return fmt.Sprintf("NumConsoles: %s, LastUpdate: %s, NumNodePods: %s, NumRvrNodesPerPod: %s, NumMtnNodesPerPod: %s, MaxRiverNodesPerPod: %s, MaxMtnNodesPerPod: %s",
+//		hr.NumberConsoles, hr.LastHardwareUpdate, hr.NumberNodePods, hr.NumberRvrNodesPerPod, hr.NumberMtnNodesPerPod, hr.MaxRvrNodesPerPod, hr.MaxMtnNodesPerPod)
+//}
 
 // Basic liveness probe
 func doHealth(w http.ResponseWriter, r *http.Request) {
@@ -78,6 +81,7 @@ func doHealth(w http.ResponseWriter, r *http.Request) {
 // Fill out the current status of a HealthResponse object
 func getCurrentHealth() HealthResponse {
 	var stats HealthResponse
+	stats.HardwareUpdateSec = fmt.Sprintf("%d", newHardwareCheckPeriodSec)
 	stats.LastHardwareUpdate = hardwareUpdateTime
 	stats.NumberConsoles = fmt.Sprintf("%d", len(nodeCache))
 	stats.NumberNodePods = fmt.Sprintf("%d", numNodePods)
@@ -85,6 +89,8 @@ func getCurrentHealth() HealthResponse {
 	stats.NumberMtnNodesPerPod = fmt.Sprintf("%d", numMtnNodesPerPod)
 	stats.MaxRvrNodesPerPod = fmt.Sprintf("%d", maxRvrNodesPerPod)
 	stats.MaxMtnNodesPerPod = fmt.Sprintf("%d", maxMtnNodesPerPod)
+	stats.HeartbeatCheckSec = fmt.Sprintf("%d", heartbeatCheckPeriodSec)
+	stats.HeartbeatStaleMin = fmt.Sprintf("%d", heartbeatStaleMinutes)
 	return stats
 }
 

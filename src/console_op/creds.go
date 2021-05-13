@@ -108,7 +108,7 @@ func vaultGeneratePrivateKey(vaultToken string) (response []byte, responseCode i
 			response, responseCode)
 	}
 
-	log.Printf("A new seceret for %s was generated in vault.", vaultBmcKeyName)
+	log.Printf("A new secret for %s was generated in vault.", vaultBmcKeyName)
 	return response, responseCode, nil
 }
 
@@ -251,12 +251,12 @@ func vaultGetMountainConsoleCredentials() error {
 	// Write the private key to the local file system.
 	err = ioutil.WriteFile(mountainConsoleKey, []byte(pvtKey), 0600)
 	if err != nil {
-		log.Printf("Failed to wtite our the private ssh key received from Vault.")
+		log.Printf("Failed to write our the private ssh key received from Vault.")
 		return err
 	}
 
 	// Extract the public key from the private and convert to ssh format.
-	log.Printf("Atempting to obtain BMC public console key.")
+	log.Printf("Attempting to obtain BMC public console key.")
 	var outBuf bytes.Buffer
 	cmd := exec.Command("sh", "-c", fmt.Sprintf("ssh-keygen -yf %s > %s",
 		mountainConsoleKey, mountainConsoleKeyPub))
@@ -274,11 +274,14 @@ func vaultGetMountainConsoleCredentials() error {
 // Used to generate Mountain console credentials in the event
 // they can not be provided by Vault.
 func generateMountainConsoleCredentials() error {
+	// TODO: we should be able to call this directly and eliminate the script - need
+	//  to figure out why this isn't working as expected
+	//cmd := exec.Command("/usr/bin/ssh-keygen", "-qf", mountainConsoleKey, "-N", "''", "<<<y")
+	// Error code 1 ...
+
 	// Generate an ssh key pair (/etc/conman.key and /etc/conman.key.pub)
 	// This will overwrite the existing public or private key files.
 	var outBuf bytes.Buffer
-	//cmd := exec.Command("/usr/bin/ssh-keygen", "-qf", mountainConsoleKey, "-N", "''", "<<<y")
-	// Error code 1 ...  TBD debug this further and eliminate the script if possible.
 	cmd := exec.Command("/app/console-ssh-keygen")
 	cmd.Stderr = &outBuf
 	cmd.Stdout = &outBuf
@@ -338,7 +341,6 @@ func ensureMountainConsoleKeysDeployed(nodes []nodeConsoleInfo) bool {
 	mtnBmcList := make(map[string]string)
 	for _, nodeCi := range nodes {
 		if nodeCi.Class == "Mountain" {
-			// log.Printf("Found BMC: %s %s", nodeCi.BmcName, nodeCi.BmcFqdn)
 			mtnBmcList[nodeCi.BmcFqdn] = nodeCi.BmcName
 		}
 	}
@@ -364,8 +366,8 @@ func ensureMountainConsoleKeysDeployed(nodes []nodeConsoleInfo) bool {
 	URL := "http://cray-scsd/v1/bmc/loadcfg"
 	data, rc, err := postURL(URL, jsonScsdParam, nil)
 
-	// consider any http return code < 400 as succes
-	retVal = rc < 400
+	// consider any http return code < 400 as success
+	retVal = rc < 300
 
 	// parse the return data
 	scsdReply := scsdList{}
