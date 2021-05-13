@@ -179,8 +179,6 @@ func doHardwareUpdate(updateAll, redeployMtnKeys bool) (updateSuccess, keySucces
 	updateNodeCounts(numMtnNodes, numRvrNodes)
 
 	// make sure the console ssh key has been deployed on all new mountain nodes
-	// TODO - I think we only need to pass in a list of bmcFqdn names, but keeping
-	//  this old mechanism for now...
 	// NOTE: do this last so console-node pods can start to spin up and acquire
 	//  nodes while key deployment is happening - may take a while.
 	if len(newMtnNodes) > 0 {
@@ -236,10 +234,6 @@ func watchHardware() {
 
 // Main loop for the application
 func main() {
-	// NOTE: this is a work in progress starting to restructure this application
-	//  to manage the console state - watching for hardware changes and
-	//  updating / restarting the conman process when needed
-
 	// parse the command line flags to the application
 	flag.BoolVar(&debugOnly, "debug", false, "Run in debug only mode, not starting conmand")
 	flag.Parse()

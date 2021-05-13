@@ -24,7 +24,7 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 
-# This is invoked by configure_conman to generate the Mountain node
+# This is invoked by the console-operator pod to generate the Mountain node
 # console ssh key pair as required.
 
 /usr/bin/ssh-keygen -qf /var/log/console/conman.key -N '' <<<y
