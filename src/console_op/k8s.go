@@ -54,7 +54,6 @@ func initK8s() {
 	var err error
 	k8sConfig, err = rest.InClusterConfig()
 	if err != nil {
-		//panic(err.Error())
 		log.Printf("InClusterConfig error: %s", err.Error())
 		return
 	}
@@ -62,7 +61,6 @@ func initK8s() {
 	// creates the clientset
 	k8sClientset, err = kubernetes.NewForConfig(k8sConfig)
 	if err != nil {
-		//panic(err.Error())
 		log.Printf("NewForConfig error: %s", err.Error())
 		return
 	}
@@ -114,14 +112,13 @@ func updateReplicaCount(newReplicaCnt int) {
 	// in the console-node statefulset.  It will change the replica count to
 	// match what it should be creating new pods or destroying current ones.
 
-	// insure that k8s was initialized correctly
+	// ensure that k8s was initialized correctly
 	if k8sClientset == nil || k8sConfig == nil {
 		log.Printf("ERROR: k8s not initialized correctly")
 		return
 	}
 
 	// get the stateful set
-	//log.Printf("Getting cray-console-node stateful set")
 	dep, err := k8sClientset.AppsV1().StatefulSets("services").Get("cray-console-node", metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		log.Printf("StatefulSet cray-console-node not found in services namespace\n")
@@ -135,7 +132,6 @@ func updateReplicaCount(newReplicaCnt int) {
 	}
 
 	// Find the current number of replicas in the deployment
-	//log.Printf("Found cray-console-node deployment in default namespace\n")
 	currReplicas := *dep.Spec.Replicas
 	log.Printf("Current console-node replicas: %d, Requested replicas: %d", currReplicas, newReplicaCnt)
 
@@ -190,7 +186,6 @@ func updateNodesPerPod(newNumMtn, newNumRvr int) {
 	log.Printf("Opening target node file for output: %s", targetNodeFile)
 	cf, err := os.OpenFile(targetNodeFile, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
-		// log the problem and panic
 		log.Printf("Error: Unable to open config file to write: %s", err)
 	}
 	defer cf.Close()

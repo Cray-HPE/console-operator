@@ -81,7 +81,6 @@ func (sc stateComponent) String() string {
 
 // Query hsm for redfish endpoint information
 func getRedfishEndpoints() ([]redfishEndpoint, error) {
-	//log.Print("Gathering redfish endpoints from HSM")
 	type response struct {
 		RedfishEndpoints []redfishEndpoint
 	}
@@ -102,18 +101,11 @@ func getRedfishEndpoints() ([]redfishEndpoint, error) {
 		return nil, err
 	}
 
-	// log the initial redfish endpoints gathered
-	//for _, redEndpoint := range rp.RedfishEndpoints {
-	//	log.Printf("  %s", redEndpoint)
-	//}
-
 	return rp.RedfishEndpoints, nil
 }
 
 // Query hsm for state component information
 func getStateComponents() ([]stateComponent, error) {
-	//log.Print("Gathering state components from HSM")
-
 	// get the component states from hsm - includes river/mountain information
 	type response struct {
 		Components []stateComponent
@@ -132,13 +124,9 @@ func getStateComponents() ([]stateComponent, error) {
 	err = json.Unmarshal(data, &rp)
 	if err != nil {
 		// handle error
-		log.Panicf("Error unmarshalling data: %s", err)
+		log.Printf("Error unmarshalling data: %s", err)
+		return nil, nil
 	}
-
-	// log the initial components
-	//for _, sc := range rp.Components {
-	//	log.Printf("  %s", sc)
-	//}
 
 	return rp.Components, nil
 }

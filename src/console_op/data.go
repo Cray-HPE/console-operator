@@ -119,7 +119,7 @@ func dataRemoveNodes(removedNodes []nodeConsoleInfo) {
 			log.Printf("Console-data return message: %s", rp.message)
 		}
 	} else {
-		log.Printf("Console-data had no return data, response code:%d", rc)
+		log.Printf("Console-data had no return data, response code: %d", rc)
 	}
 
 }

@@ -48,13 +48,7 @@ type HealthResponse struct {
 	HeartbeatStaleMin    string `json:"heartbeatstale"`
 }
 
-// Function to output contents of the struct as a string
-//func (hr HealthResponse) String() string {
-//	return fmt.Sprintf("NumConsoles: %s, LastUpdate: %s, NumNodePods: %s, NumRvrNodesPerPod: %s, NumMtnNodesPerPod: %s, MaxRiverNodesPerPod: %s, MaxMtnNodesPerPod: %s",
-//		hr.NumberConsoles, hr.LastHardwareUpdate, hr.NumberNodePods, hr.NumberRvrNodesPerPod, hr.NumberMtnNodesPerPod, hr.MaxRvrNodesPerPod, hr.MaxMtnNodesPerPod)
-//}
-
-// Basic liveness probe
+// Debugging information query
 func doHealth(w http.ResponseWriter, r *http.Request) {
 	// NOTE: this is provided as a quick check of the internal status for
 	//  administrators to aid in determining the health of this service.
@@ -100,8 +94,6 @@ func doLiveness(w http.ResponseWriter, r *http.Request) {
 	//  for liveness/readiness checks.  This function should only be
 	//  used to indicate the server is still alive and processing requests.
 
-	log.Printf("Doing liveness check")
-
 	// only allow 'GET' calls
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", "GET")
@@ -120,8 +112,6 @@ func doReadiness(w http.ResponseWriter, r *http.Request) {
 	// NOTE: this is coded in accordance with kubernetes best practices
 	//  for liveness/readiness checks.  This function should only be
 	//  used to indicate the server is still alive and processing requests.
-
-	log.Printf("Doing readiness check")
 
 	// only allow 'GET' calls
 	if r.Method != http.MethodGet {
@@ -149,9 +139,9 @@ type MaxNodeData struct {
 	MaxMtnNodes int `json:"maxMtn"` // max number of mountain nodes per pod
 }
 
-// small helper function to insure correct number of nodes asked for
+// small helper function to ensure correct number of nodes asked for
 func pinNumNodes(numAsk, numMin, numMax int) (int, bool) {
-	// insure the input number ends in range [0,numMax]
+	// ensure the input number ends in range [0,numMax]
 	ok := true
 	val := numAsk
 	if val < numMin {
@@ -283,8 +273,10 @@ func doInfo(w http.ResponseWriter, r *http.Request) {
 
 // Debugging only - clear all current data from services
 func doClearData(w http.ResponseWriter, r *http.Request) {
-	// NOTE: this is provided as a quick check of the internal status for
-	//  administrators to aid in determining the health of this service.
+	// This will force a clear of all cached data here as well as removing all
+	// node information from console-data.  That will trigger all console-nodes
+	// to drop the consoles they are watching on the next heartbeat call.  All
+	// will get picked up again on the next call to state manager.
 	log.Printf("Calling doClearData...")
 
 	// only allow 'DELETE' calls
