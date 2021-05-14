@@ -1,4 +1,4 @@
-module stash.us.cray.com/SCMS/cms-console-operator
+module stash.us.cray.com/SCMS/console-operator
 
 go 1.13
 
@@ -6,9 +6,11 @@ require (
 	github.com/Azure/go-autorest/autorest v0.11.18 // indirect
 	github.com/googleapis/gnostic v0.3.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/tidwall/gjson v1.7.5
+	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	k8s.io/api v0.0.0
+	k8s.io/api v0.0.0 // indirect
 	k8s.io/apimachinery v0.0.0
 	k8s.io/client-go v12.0.0+incompatible
 )

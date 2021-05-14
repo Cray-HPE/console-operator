@@ -1,14 +1,14 @@
 @Library('dst-shared@master') _
 
 dockerBuildPipeline {
-    app = "conman"
-    name = "conman"
-    description = "Cray Management System conman logging service"
+    app = "console-operator"
+    name = "console-operator"
+    description = "Cray Management System console operator service"
     repository = "cray"
     imagePrefix = "cray"
     product = "csm"
     
-    githubPushRepo = "Cray-HPE/cms-conman"
+    githubPushRepo = "Cray-HPE/console-operator"
     /*
         By default all branches are pushed to GitHub
 

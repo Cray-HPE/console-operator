@@ -1,5 +1,28 @@
+#
+# MIT License
+#
+# (C) Copyright [2020-2021] Hewlett Packard Enterprise Development LP
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+# OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+# ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+
 # Dockerfile for cray-console-operator service
-# Copyright 2021 Hewlett Packard Enterprise Development LP
 
 # Build will be where we build the go binary
 FROM arti.dev.cray.com/baseos-docker-master-local/golang:1.14-alpine3.12 AS build
@@ -29,6 +52,8 @@ RUN set -eux \
 
 # Copy in the needed files
 COPY --from=build /app/console_operator /app/
+COPY scripts/console-ssh-keygen /app/console-ssh-keygen
+COPY scripts/get-node /app/get-node
 
 # Environment Variables -- Used by the HMS secure storage pkg
 ENV VAULT_ADDR="http://cray-vault.vault:8200"
@@ -37,4 +62,11 @@ ENV VAULT_SKIP_VERIFY="true"
 RUN echo 'alias ll="ls -l"' > ~/.bashrc
 RUN echo 'alias vi="vim"' >> ~/.bashrc
 
-ENTRYPOINT ["/app/console_operator", "-debug"]
+# add a bunch of debug aliases
+RUN echo 'alias health="curl -k -X GET http://localhost:26777/console-operator/health"' >> ~/.bashrc
+RUN echo 'alias info="curl -k -X GET http://localhost:26777/console-operator/info"' >> ~/.bashrc
+RUN echo 'alias suspend="curl -k -X POST http://localhost:26777/console-operator/suspend"' >> ~/.bashrc
+RUN echo 'alias resume="curl -k -X POST http://localhost:26777/console-operator/resume"' >> ~/.bashrc
+RUN echo 'alias clearData="curl -k -X DELETE http://localhost:26777/console-operator/clearData"' >> ~/.bashrc
+
+ENTRYPOINT ["/app/console_operator"]
