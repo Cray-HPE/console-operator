@@ -1,18 +1,55 @@
-// Copyright 2021 Hewlett Packard Enterprise Development LP
+/*
+ * MIT License
+ *
+ * (C) Copyright [2019-2021] Hewlett Packard Enterprise Development LP
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 // This file contains the code needed to find node information
 
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
+	"math"
 	"strings"
 )
+
+// Struct to hold all node level information needed to form a console connection
+// NOTE: this is the basic unit of information required for each node
+type nodeConsoleInfo struct {
+	NodeName string // node xname
+	BmcName  string // bmc xname
+	BmcFqdn  string // full name of bmc
+	Class    string // river/mtn class
+	NID      int    // NID of the node
+	Role     string // role of the node
+}
+
+// Provide a function to convert struct to string
+func (nc nodeConsoleInfo) String() string {
+	return fmt.Sprintf("NodeName:%s, BmcName:%s, BmcFqdn:%s, Class:%s, NID:%d, Role:%s",
+		nc.NodeName, nc.BmcName, nc.BmcFqdn, nc.Class, nc.NID, nc.Role)
+}
 
 // Struct to hold hsm redfish endpoint information
 type redfishEndpoint struct {
@@ -42,101 +79,8 @@ func (sc stateComponent) String() string {
 	return fmt.Sprintf("ID:%s, Type:%s, Class:%s, NID:%d, Role:%s", sc.ID, sc.Type, sc.Class, sc.NID, sc.Role)
 }
 
-// Struct to hold all node level information needed to form a console connection
-type nodeConsoleInfo struct {
-	NodeName string // node xname
-	BmcName  string // bmc xname
-	BmcFqdn  string // full name of bmc
-	Class    string // river/mtn class
-	NID      int    // NID of the node
-	Role     string // role of the node
-}
-
-// Provide a function to convert struct to string
-func (nc nodeConsoleInfo) String() string {
-	return fmt.Sprintf("NodeName:%s, BmcName:%s, BmcFqdn:%s, Class:%s, NID:%d, Role:%s",
-		nc.NodeName, nc.BmcName, nc.BmcFqdn, nc.Class, nc.NID, nc.Role)
-}
-
-// Helper function to execute an http command
-func getURL(URL string, requestHeaders map[string]string) ([]byte, int, error) {
-	var err error = nil
-	log.Printf("getURL URL: %s\n", URL)
-	req, err := http.NewRequest("GET", URL, nil)
-	if err != nil {
-		// handle error
-		log.Printf("getURL Error creating new request to %s: %s", URL, err)
-		return nil, -1, err
-	}
-	if requestHeaders != nil {
-		for k, v := range requestHeaders {
-			req.Header.Add(k, v)
-		}
-	}
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		// handle error
-		log.Printf("getURL Error on request to %s: %s", URL, err)
-		return nil, -1, err
-	}
-	log.Printf("getURL Response Status code: %d\n", resp.StatusCode)
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		// handle error
-		log.Printf("Error reading response: %s", err)
-		return nil, resp.StatusCode, err
-	}
-	// NOTE: Dumping entire response clogs up the log file but keep for debugging
-	//fmt.Printf("Data: %s\n", data)
-	return data, resp.StatusCode, err
-}
-
-// Helper function to execute an http POST command
-func postURL(URL string, requestBody []byte, requestHeaders map[string]string) ([]byte, int, error) {
-	var err error = nil
-	log.Printf("postURL URL: %s\n", URL)
-	req, err := http.NewRequest("POST", URL, bytes.NewReader(requestBody))
-	if err != nil {
-		// handle error
-		log.Printf("postURL Error creating new request to %s: %s", URL, err)
-		return nil, -1, err
-	}
-	req.Header.Add("Content-Type", "application/json")
-	if requestHeaders != nil {
-		for k, v := range requestHeaders {
-			req.Header.Add(k, v)
-		}
-	}
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		// handle error
-		log.Printf("postURL Error on request to %s: %s", URL, err)
-		return nil, -1, err
-	}
-
-	log.Printf("postURL Response Status code: %d\n", resp.StatusCode)
-	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		// handle error
-		log.Printf("postURL Error reading response: %s", err)
-		return nil, resp.StatusCode, err
-	}
-	//fmt.Printf("Data: %s\n", data)
-	return data, resp.StatusCode, err
-}
-
 // Query hsm for redfish endpoint information
 func getRedfishEndpoints() ([]redfishEndpoint, error) {
-	// if running in debug mode, skip hsm query
-	//if debugOnly {
-	//	log.Print("DEBUGONLY mode - skipping redfish endpoints query")
-	//	return nil, nil
-	//}
-
-	log.Print("Gathering redfish endpoints from HSM")
 	type response struct {
 		RedfishEndpoints []redfishEndpoint
 	}
@@ -157,23 +101,11 @@ func getRedfishEndpoints() ([]redfishEndpoint, error) {
 		return nil, err
 	}
 
-	// log the initial redfish endpoints gathered
-	for _, redEndpoint := range rp.RedfishEndpoints {
-		log.Printf("  %s", redEndpoint)
-	}
-
 	return rp.RedfishEndpoints, nil
 }
 
 // Query hsm for state component information
 func getStateComponents() ([]stateComponent, error) {
-	// if running in debug mode, skip hsm query
-	//if debugOnly {
-	//	log.Print("DEBUGONLY mode - skipping state components query")
-	//	return nil, nil
-	//}
-
-	log.Print("Gathering state components from HSM")
 	// get the component states from hsm - includes river/mountain information
 	type response struct {
 		Components []stateComponent
@@ -192,18 +124,14 @@ func getStateComponents() ([]stateComponent, error) {
 	err = json.Unmarshal(data, &rp)
 	if err != nil {
 		// handle error
-		log.Panicf("Error unmarshalling data: %s", err)
-	}
-
-	// log the initial components
-	for _, sc := range rp.Components {
-		log.Printf("  %s", sc)
+		log.Printf("Error unmarshalling data: %s", err)
+		return nil, nil
 	}
 
 	return rp.Components, nil
 }
 
-func getCurrentNodes() (nodes []nodeConsoleInfo) {
+func getCurrentNodesFromHSM() (nodes []nodeConsoleInfo) {
 	// Get the BMC IP addresses and user, and password for individual nodes.
 	// conman is only set up for River nodes.
 	log.Printf("Starting to get current nodes on the system")
@@ -237,9 +165,9 @@ func getCurrentNodes() (nodes []nodeConsoleInfo) {
 
 			// pull information about the node BMC from the redfish information
 			bmcName := sc.ID[0:strings.LastIndex(sc.ID, "n")]
-			log.Printf("Parsing node info. Node:%s, bmc:%s", sc.ID, bmcName)
+			//log.Printf("Parsing node info. Node:%s, bmc:%s", sc.ID, bmcName)
 			if rf, ok := rfMap[bmcName]; ok {
-				log.Print("  Found redfish endpoint info")
+				//log.Print("  Found redfish endpoint info")
 				// found the bmc in the redfish information
 				newNode.BmcName = bmcName
 				newNode.BmcFqdn = rf.FQDN
@@ -248,7 +176,7 @@ func getCurrentNodes() (nodes []nodeConsoleInfo) {
 				nodes = append(nodes, newNode)
 
 				// add to list of bmcs to get creds from
-				log.Printf("Added node: %s", newNode)
+				//log.Printf("Added node: %s", newNode)
 				xnames = append(xnames, bmcName)
 			} else {
 				log.Printf("Node with no BMC present: %s, bmcName:%s", sc.ID, bmcName)
@@ -257,4 +185,49 @@ func getCurrentNodes() (nodes []nodeConsoleInfo) {
 	}
 
 	return nodes
+}
+
+// update settings based on the current number of nodes in the system
+func updateNodeCounts(numMtnNodes, numRvrNodes int) {
+	// update the number of pods based on max numbers
+	// NOTE: at this point we will require one more than absolutely required both
+	//  to handle the edge case of exactly matching a multiple of the max per
+	//  pod as well as adding a little resiliency
+	log.Printf("Mountain current: %d, max per node: %d", numMtnNodes, maxMtnNodesPerPod)
+	log.Printf("River    current: %d, max per node: %d", numRvrNodes, maxRvrNodesPerPod)
+
+	// bail if there hasn't been anything reported yet - don't want to change
+	// replica count when hsm hasn't been populated (or contacted) yet
+	if numMtnNodes+numRvrNodes == 0 {
+		log.Printf("No nodes found, skipping count update")
+		return
+	}
+
+	// lets be extra paranoid about divide by zero issues...
+	mm := math.Max(float64(maxMtnNodesPerPod), 1)
+	mr := math.Max(float64(maxRvrNodesPerPod), 1)
+
+	// calculate number of pods needed for mountain and river nodes, choose max
+	numMtnReq := int(math.Ceil(float64(numMtnNodes)/mm) + 1)
+	numRvrReq := int(math.Ceil(float64(numRvrNodes)/mr) + 1)
+	newNumPods := numMtnReq
+	if numRvrReq > newNumPods {
+		newNumPods = numRvrReq
+	}
+
+	// update the number of nodes / pod based on number of pods
+	updateReplicaCount(newNumPods)
+
+	// update the number of mtn + river consoles to watch per pod
+	// NOTE: adding a little slop to how many each pod wants just for a little
+	//  wiggle room, not strictly needed
+	newMtn := int(math.Ceil(float64(numMtnNodes)/float64(newNumPods)) + 1)
+	newRvr := int(math.Ceil(float64(numRvrNodes)/float64(newNumPods)) + 1)
+	log.Printf("New number of nodes per pod- Mtn: %d, Rvr: %d", newMtn, newRvr)
+
+	// push new numbers where they need to go
+	if newRvr != numRvrNodesPerPod || newMtn != numMtnNodesPerPod {
+		// something changed so we need to update
+		updateNodesPerPod(newMtn, newRvr)
+	}
 }

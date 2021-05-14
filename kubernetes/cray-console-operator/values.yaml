@@ -8,64 +8,58 @@
 #   pullPolicy: "" (default = "IfNotPresent")
 
 console_operator_config:
-  cray_console_log_identifier: 'ID'
-  cray_console_smd_url: 'http://cray-smd'
-  cray_console_rf_endpoint: 'hsm/v1/Inventory/RedfishEndpoints'
+  cray_console_operator_log_identifier: 'ID'
+  cray_console_operator_smd_url: 'http://cray-smd'
+  cray_console_operator_rf_endpoint: 'hsm/v1/Inventory/RedfishEndpoints'
 
 cray-service:
   type: Deployment
   nameOverride: cray-console-operator
+  serviceAccountName: cray-console-operator
   containers:
     cray-console-operator:
       name: cray-console-operator
       image:
         repository: cray/cray-console-operator
+      ports:
+        - name: http
+          containerPort: 26777
       resources:
         limits:
           cpu: "4"
-          memory: 4Gi
+          memory: 1Gi
         requests:
           cpu: 100m
           memory: 64Mi
       env:
-      - name: LOG_ROT_ENABLE
-        value: "True"
-      - name: LOG_ROT_FILE_SIZE
-        value: "5M"
-      - name: LOG_ROT_SEC_FREQ
-        value: "600"
-      - name: LOG_ROT_NUM_KEEP
-        value: "2"
+      - name: MAX_MTN_NODES_PER_POD
+        value: "750"
+      - name: MAX_RVR_NODES_PER_POD
+        value: "2000"
+      - name: HARDWARE_UPDATE_SEC_FREQ
+        value: "30"
+      - name: HEARTBEAT_CHECK_SEC_FREQ
+        value: "15"
+      - name: HEARTBEAT_STALE_DURATION_MINUTES
+        value: "3"
       envFrom:
       - configMapRef:
           name: console-operator-config
+      livenessProbe:
+        httpGet:
+          port: 26777
+          path: /console-operator/liveness
+        initialDelaySeconds: 10
+        periodSeconds: 60
+      readinessProbe:
+        httpGet:
+          port: 26777
+          path: /console-operator/readiness
+        initialDelaySeconds: 5
+        periodSeconds: 60
       volumeMounts:
       - mountPath: /var/log/
         name: cray-console-logs
-      livenessProbe:
-        exec:
-          command:
-          - cat
-          - /etc/conman.conf
-        initialDelaySeconds: 15
-        periodSeconds: 10
-      readinessProbe:
-        exec:
-          command:
-          - grep
-          - 'console'
-          - /etc/conman.conf
-        initialDelaySeconds: 20
-        periodSeconds: 10
-    log-forwarding:
-      name: log-forwarding
-      image:
-        repository: baseos/alpine
-        tag: 3.12.0
-      args: [/bin/sh, -c, 'tail -n 0 -F /var/log/conman/consoleAgg.log']
-      volumeMounts:
-      - name: cray-console-logs
-        mountPath: /var/log
   volumes:
     cray-console-logs:
       name: cray-console-logs
@@ -83,6 +77,6 @@ cray-service:
   ingress:
     enabled: true
     uri: " "
-    prefix: /apis/console
+    prefix: /apis/console-operator
   strategy:
     type: Recreate
