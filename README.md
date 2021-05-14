@@ -36,14 +36,8 @@ user must exec into the correct pod to connect to a particular node.  To find th
 pod that is monitoring a particular node, query the Console Operator Service to find the
 correct Console Node pod:
 ```
-ncn-m001: # kubectl -n services exec -it cray-console-operator-677bc95cf9-wt8xt -- sh
-/ # curl -k -X GET -H "Content-Type: application/json" -d '{"xname":"XNAME"}' \
-http://localhost:26777/console-operator/v0/getNodePod
+ncn-m001: # kubectl -n services exec cray-console-operator-677bc95cf9-wt8xt -- sh -c '/app/get-node XNAME'
 {"podname":"cray-console-node-1"}
-/ # exit
-```
-Next exec into the pod returned for that node:
-```
 ncn-m001: # kubectl -n services exec -it cray-console-node-1 -- sh
 sh-4.4# conman -j XNAME
 

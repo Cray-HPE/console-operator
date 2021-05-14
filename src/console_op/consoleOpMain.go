@@ -266,24 +266,15 @@ func main() {
 	flag.BoolVar(&debugOnly, "debug", false, "Run in debug only mode, not starting conmand")
 	flag.Parse()
 
-	log.Printf("Initial value of maxMtnNodesPerPod: %d", maxMtnNodesPerPod)
-	log.Printf("Initial value of maxRvrNodesPerPod: %d", maxRvrNodesPerPod)
-	log.Printf("Initial value of newHardwareCheckPeriodSec: %d", newHardwareCheckPeriodSec)
-	log.Printf("Initial value of heartbeatCheckPeriodSec: %d", heartbeatCheckPeriodSec)
-	log.Printf("Initial value of heartbeatStaleMinutes: %d", heartbeatStaleMinutes)
-
 	// read the env variables into global vars with min/max sanity checks
+	if v := os.Getenv("DEBUG"); v == "TRUE" {
+		debugOnly = true
+	}
 	readSingleEnvVarInt("MAX_MTN_NODES_PER_POD", &maxMtnNodesPerPod, 5, 1500)
 	readSingleEnvVarInt("MAX_RVR_NODES_PER_POD", &maxRvrNodesPerPod, 5, 4000)
 	readSingleEnvVarInt("HARDWARE_UPDATE_SEC_FREQ", &newHardwareCheckPeriodSec, 10, 14400) // 10 sec -> 4 hrs
 	readSingleEnvVarInt("HEARTBEAT_CHECK_SEC_FREQ", &heartbeatCheckPeriodSec, 10, 300)     // 10 sec -> 5 min
 	readSingleEnvVarInt("HEARTBEAT_STALE_DURATION_MINUTES", &heartbeatStaleMinutes, 1, 60) // 1 min -> 60 min
-
-	log.Printf("Final value of maxMtnNodesPerPod: %d", maxMtnNodesPerPod)
-	log.Printf("Final value of maxRvrNodesPerPod: %d", maxRvrNodesPerPod)
-	log.Printf("Final value of newHardwareCheckPeriodSec: %d", newHardwareCheckPeriodSec)
-	log.Printf("Final value of heartbeatCheckPeriodSec: %d", heartbeatCheckPeriodSec)
-	log.Printf("Final value of heartbeatStaleMinutes: %d", heartbeatStaleMinutes)
 
 	// log the fact if we are in debug mode
 	if debugOnly {
