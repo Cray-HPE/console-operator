@@ -1,0 +1,11 @@
+###################################################################################
+# Note: This is a config file for the file_filter tool, used to refine the scope
+# of files that should be checked for copyright/license headers by the
+# copyright_license_check tool. Both tools can be found in the cms-meta-tools
+# repo.
+###################################################################################
+
+# These files also require copyright/license headers
+also_include_files:
+    - "scripts/console-ssh-keygen"
+    - "scripts/get-node"
