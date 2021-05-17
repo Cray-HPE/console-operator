@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 # Copyright 2020-2021 Hewlett Packard Enterprise Development LP
 #
@@ -22,7 +22,8 @@
 #
 # (MIT License)
 
-# This is invoked by the console-operator pod to generate the Mountain node
-# console ssh key pair as required.
-
-/usr/bin/ssh-keygen -qf /var/log/console/conman.key -N '' <<<y
+./install_cms_meta_tools.sh || exit 1
+./cms_meta_tools/copyright_license_check/copyright_license_check.sh || exit 1
+./cms_meta_tools/go_lint/go_lint.sh || exit 1
+rm -rf ./cms_meta_tools
+exit 0
