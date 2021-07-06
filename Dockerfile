@@ -41,7 +41,7 @@ RUN set -ex && go build -v -i -o /app/console_operator $GOPATH/src/console_op
 
 ### Final Stage ###
 # Start with a fresh image so build tools are not included
-FROM arti.dev.cray.com/baseos-docker-master-local/alpine:3.12.4
+FROM arti.dev.cray.com/baseos-docker-master-local/alpine:3.13.5
 
 # Install conman application from package
 RUN set -eux \
