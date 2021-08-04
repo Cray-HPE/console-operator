@@ -16,6 +16,7 @@ pipeline {
         IS_STABLE = getBuildIsStable()
         VERSION = getDockerBuildVersion(isStable: env.IS_STABLE)
         DOCKER_ARGS = getDockerBuildArgs(name: env.DOCKER_NAME, description: env.DESCRIPTION)
+        CHART_NAME = "cray-console-operator"
         CHART_VERSION = getChartVersion(version: env.VERSION)
     }
 
@@ -42,6 +43,7 @@ pipeline {
 
                 stage('Chart') {
                     steps {
+                        updateCsmHelmChartAppVersion(chartPath: "${WORKSPACE}/kubernetes/${CHART_NAME}", appVersion:  env.VERSION)
                         sh "make chart"
                     }
                 }
