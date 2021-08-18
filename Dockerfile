@@ -23,7 +23,7 @@
 # Dockerfile for cray-console-operator service
 
 # Build will be where we build the go binary
-FROM arti.dev.cray.com/baseos-docker-master-local/golang:1.14-alpine3.12 AS build
+FROM arti.dev.cray.com/baseos-docker-master-local/golang:1.14-alpine3.12 as build
 RUN set -eux \
     && apk update \
     && apk add --no-cache build-base
@@ -41,7 +41,7 @@ RUN set -ex && go build -v -i -o /app/console_operator $GOPATH/src/console_op
 
 ### Final Stage ###
 # Start with a fresh image so build tools are not included
-FROM arti.dev.cray.com/baseos-docker-master-local/alpine:3.13.5
+FROM arti.dev.cray.com/baseos-docker-master-local/alpine:3.13.5 as base
 
 # Install conman application from package
 RUN set -eux \

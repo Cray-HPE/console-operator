@@ -1,4 +1,5 @@
-@Library('csm-shared-library') _
+@Library('cms-meta-tools') _
+@Library('csm-shared-library') __
 
 pipeline {
     agent {
@@ -14,16 +15,27 @@ pipeline {
         NAME = "cray-console-operator"
         DESCRIPTION = "Cray Management System conman logging operator service"
         IS_STABLE = getBuildIsStable()
-        VERSION = getDockerBuildVersion(isStable: env.IS_STABLE)
-        DOCKER_ARGS = getDockerBuildArgs(name: env.DOCKER_NAME, description: env.DESCRIPTION)
         CHART_NAME = "cray-console-operator"
-        CHART_VERSION = getChartVersion(version: env.VERSION)
     }
 
     stages {
-        stage("Build Prep") {
+        stage("Clone cms_meta_tools repo") {
             steps {
-                sh "make build_prep"
+                // This function is defined in cms-meta-tools:vars/cloneCMSMetaTools.groovy
+                cloneCMSMetaTools()
+            }
+        }
+
+        stage("Set Versions") {
+            steps {
+                // This function is defined in cms-meta-tools:vars/setVersionFiles.groovy
+                setVersionFiles()
+            }
+        }
+
+        stage("runBuildPrep") {
+            steps {
+                sh "make runbuildprep"
             }
         }
 
@@ -36,14 +48,24 @@ pipeline {
         stage("Build") {
             parallel {
                 stage('Image') {
+                    environment {
+                        DOCKER_VERSION = sh(returnStdout: true, script: "head -1 .docker_version").trim()
+                        DOCKER_ARGS = getDockerBuildArgs(name: env.NAME, description: env.DESCRIPTION, version: env.DOCKER_VERSION)
+                    }
+
                     steps {
+                        echo "Docker args are ${env.DOCKER_ARGS}"
                         sh "make image"
                     }
                 }
 
                 stage('Chart') {
+                    environment {
+                        DOCKER_VERSION = sh(returnStdout: true, script: "head -1 .docker_version").trim()
+                    }
+
                     steps {
-                        updateCsmHelmChartAppVersion(chartPath: "${WORKSPACE}/kubernetes/${CHART_NAME}", appVersion:  env.VERSION)
+                        updateCsmHelmChartAppVersion(chartPath: "${WORKSPACE}/kubernetes/${CHART_NAME}", appVersion:  env.DOCKER_VERSION)
                         sh "make chart"
                     }
                 }
@@ -51,11 +73,13 @@ pipeline {
         }
 
         stage('Publish ') {
+            environment {
+                DOCKER_VERSION = sh(returnStdout: true, script: "head -1 .docker_version").trim()
+            }
+
             steps {
-                script {
-                    publishCsmDockerImage(image: env.NAME, tag: env.VERSION, isStable: env.IS_STABLE)
-                    publishCsmHelmCharts(component: env.NAME, chartsPath: "${WORKSPACE}/kubernetes/.packaged", isStable: env.IS_STABLE)
-                }
+                publishCsmDockerImage(image: env.NAME, tag: env.DOCKER_VERSION, isStable: env.IS_STABLE)
+                publishCsmHelmCharts(component: env.NAME, chartsPath: "${WORKSPACE}/kubernetes/.packaged", isStable: env.IS_STABLE)
             }
         }
     }
