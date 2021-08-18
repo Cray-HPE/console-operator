@@ -20,32 +20,35 @@
 #
 # (MIT License)
 
+# If you wish to perform a local build, you will need to clone or copy the contents of the
+# cms-meta-tools repo to ./cms_meta_tools
+
 NAME ?= cray-console-operator
 CHART_PATH ?= kubernetes
-VERSION ?= $(shell cat .version)-local
-CHART_VERSION ?= $(VERSION)
+DOCKER_VERSION ?= $(shell head -1 .docker_version)
+CHART_VERSION ?= $(shell head -1 .chart_version)
 
 HELM_UNITTEST_IMAGE ?= quintush/helm-unittest:3.3.0-0.2.5
 
-all : build_prep lint image chart
+all : runbuildprep lint image chart
 chart: chart_setup chart_package chart_test
 
-build_prep:
-		./runBuildPrep.sh
+runbuildprep:
+		./cms_meta_tools/scripts/runBuildPrep.sh
 
 lint:
-		./runLint.sh
+		./cms_meta_tools/scripts/runLint.sh
 
 image:
-		docker build --pull ${DOCKER_ARGS} --tag '${NAME}:${VERSION}' .
+		docker build --pull ${DOCKER_ARGS} --tag '${NAME}:${DOCKER_VERSION}' .
 
 chart_setup:
 		mkdir -p ${CHART_PATH}/.packaged
-		printf "\nglobal:\n  appVersion: ${VERSION}" >> ${CHART_PATH}/${NAME}/values.yaml
+		printf "\nglobal:\n  appVersion: ${DOCKER_VERSION}" >> ${CHART_PATH}/${NAME}/values.yaml
 
 chart_package:
 		helm dep up ${CHART_PATH}/${NAME}
-		helm package ${CHART_PATH}/${NAME} -d ${CHART_PATH}/.packaged --app-version ${VERSION} --version ${CHART_VERSION}
+		helm package ${CHART_PATH}/${NAME} -d ${CHART_PATH}/.packaged --app-version ${DOCKER_VERSION} --version ${CHART_VERSION}
 
 chart_test:
 		helm lint "${CHART_PATH}/${NAME}"
