@@ -155,6 +155,9 @@ func updateReplicaCount(newReplicaCnt int) {
 	numNodePods = newReplicaCnt
 }
 
+// keep track of the number of file access errors
+var numFileErrors = 0
+
 // Update the number of consoles per node pod
 func updateNodesPerPod(newNumMtn, newNumRvr int) {
 	// NOTE: for the time being we will just put this information
@@ -177,7 +180,12 @@ func updateNodesPerPod(newNumMtn, newNumRvr int) {
 		log.Printf("Target node directory does not exist, creating: %s", targetNodeDir)
 		err = os.MkdirAll(targetNodeDir, 0766)
 		if err != nil {
+			// If we have too many attempts fail, complain loudly
+			if numFileErrors > 3 {
+				log.Panicf("Multiple file access errors, unable to create dir: %s", err)
+			}
 			log.Printf("Unable to create dir: %s", err)
+			numFileErrors += 1
 			return
 		}
 	}
@@ -186,8 +194,17 @@ func updateNodesPerPod(newNumMtn, newNumRvr int) {
 	log.Printf("Opening target node file for output: %s", targetNodeFile)
 	cf, err := os.OpenFile(targetNodeFile, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
+		// If we have too many attempts fail, complain loudly
+		if numFileErrors > 3 {
+			log.Panicf("Multiple file access errors, unable to open config file to write: %s", err)
+		}
 		log.Printf("Error: Unable to open config file to write: %s", err)
+		numFileErrors += 1
+		return
 	}
+
+	// reset the file error count and make sure file gets closed
+	numFileErrors = 0
 	defer cf.Close()
 
 	// The file only consists of two lines, write them

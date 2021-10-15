@@ -61,14 +61,16 @@ COPY scripts/get-node /app/get-node
 ENV VAULT_ADDR="http://cray-vault.vault:8200"
 ENV VAULT_SKIP_VERIFY="true"
 
-RUN echo 'alias ll="ls -l"' > ~/.bashrc
-RUN echo 'alias vi="vim"' >> ~/.bashrc
+RUN echo 'alias ll="ls -l"' > /app/bashrc
 
 # add a bunch of debug aliases
-RUN echo 'alias health="curl -k -X GET http://localhost:26777/console-operator/health"' >> ~/.bashrc
-RUN echo 'alias info="curl -k -X GET http://localhost:26777/console-operator/info"' >> ~/.bashrc
-RUN echo 'alias suspend="curl -k -X POST http://localhost:26777/console-operator/suspend"' >> ~/.bashrc
-RUN echo 'alias resume="curl -k -X POST http://localhost:26777/console-operator/resume"' >> ~/.bashrc
-RUN echo 'alias clearData="curl -k -X DELETE http://localhost:26777/console-operator/clearData"' >> ~/.bashrc
+RUN echo 'alias health="curl -sk -X GET http://localhost:26777/console-operator/health"' >> /app/bashrc
+RUN echo 'alias info="curl -sk -X GET http://localhost:26777/console-operator/info"' >> /app/bashrc
+RUN echo 'alias suspend="curl -sk -X POST http://localhost:26777/console-operator/suspend"' >> /app/bashrc
+RUN echo 'alias resume="curl -sk -X POST http://localhost:26777/console-operator/resume"' >> /app/bashrc
+RUN echo 'alias clearData="curl -sk -X DELETE http://localhost:26777/console-operator/clearData"' >> /app/bashrc
+
+# set to user nobody so this won't run as root
+USER 65534:65534
 
 ENTRYPOINT ["/app/console_operator"]
