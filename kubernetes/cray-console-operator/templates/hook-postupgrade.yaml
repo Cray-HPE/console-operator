@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: console-post-upgrade
+  namespace: "services"
+  annotations:
+    "helm.sh/hook": "post-upgrade"
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 0
+      containers:
+      - name: hook1-container
+        image: "baseos/alpine:3.13"
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'chown -Rv 65534:65534 /var/log && chmod -R 766 /var/log']
+        volumeMounts:
+          - mountPath: /var/log
+            name: cray-console-logs
+      volumes:
+        - name: cray-console-logs
+          persistentVolumeClaim:
+            claimName: cray-console-operator-data-claim
