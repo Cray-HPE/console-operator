@@ -12,7 +12,7 @@ spec:
       terminationGracePeriodSeconds: 0
       containers:
       - name: hook1-container
-        image: "baseos/alpine:3.13"
+        image: artifactory.algol60.net/docker.io/alpine:latest
         imagePullPolicy: IfNotPresent
         command: ['sh', '-c', 'chown -Rv 65534:65534 /var/log && chmod -R 766 /var/log']
         volumeMounts:
