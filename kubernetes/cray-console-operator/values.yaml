@@ -81,3 +81,9 @@ cray-service:
     prefix: /apis/console-operator
   strategy:
     type: Recreate
+
+alpine:
+  image:
+    repository: alpine
+    tag: latest
+    pullPolicy: IfNotPresent
