@@ -43,7 +43,7 @@ RUN set -ex && go build -v -i -o /app/console_operator $GOPATH/src/console_op
 
 ### Final Stage ###
 # Start with a fresh image so build tools are not included
-FROM artifactory.algol60.net/docker.io/alpine:latest as base
+FROM artifactory.algol60.net/docker.io/library/alpine:latest as base
 
 # Install conman application from package
 RUN set -eux \
