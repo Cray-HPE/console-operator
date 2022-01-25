@@ -14,7 +14,7 @@ spec:
       - name: hook1-container
         image: {{ .Values.alpine.image.repository }}:{{ .Values.alpine.image.tag }}
         imagePullPolicy: {{ .Values.alpine.image.pullPolicy }}
-        command: ['sh', '-c', 'chown -Rv 65534:65534 /var/log && chmod -R 766 /var/log']
+        command: ['sh', '-c', 'mkdir -p /var/log/conman /var/log/conman.old /var/log/console && chown -Rv 65534:65534 /var/log && chmod -R 700 /var/log']
         volumeMounts:
           - mountPath: /var/log
             name: cray-console-logs
