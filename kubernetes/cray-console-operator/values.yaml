@@ -20,7 +20,8 @@ cray-service:
     cray-console-operator:
       name: cray-console-operator
       image:
-        repository: cray/cray-console-operator
+        repository: artifactory.algol60.net/csm-docker/stable/cray-console-operator
+        # tag defaults to chart appVersion
       ports:
         - name: http
           containerPort: 26777
@@ -68,7 +69,7 @@ cray-service:
   storageClass: ceph-cephfs-external
   persistentVolumeClaims:
     data-claim:
-      name: data-claim # will be prefixed with cray-console-operator
+      name: data-claim  # will be prefixed with cray-console-operator
       accessModes:
       - ReadWriteMany
       resources:
@@ -80,3 +81,9 @@ cray-service:
     prefix: /apis/console-operator
   strategy:
     type: Recreate
+
+alpine:
+  image:
+    repository: alpine
+    tag: latest
+    pullPolicy: IfNotPresent

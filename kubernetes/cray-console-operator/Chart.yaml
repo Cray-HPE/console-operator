@@ -1,6 +1,25 @@
-apiVersion: v1
-description: "Kubernetes resources for cray-console-operator"
-name: "cray-console-operator"
-home: "scms/cray-console-operator"
-# This version string is replaced at build time by the build prep script
-version: @VERSION@
+apiVersion: v2
+name: cray-console-operator
+version: 0.0.0
+description: Kubernetes resources for cray-console-operator
+keywords:
+  - cray-console
+  - cray-console-operator
+home: https://github.com/Cray-HPE/console-operator
+sources:
+- https://github.com/Cray-HPE/console-operator
+dependencies:
+- name: cray-service
+  version: ^7.0.0
+  repository: https://artifactory.algol60.net/artifactory/csm-helm-charts/
+maintainers:
+- name: dlaine-hpe
+  email: laine@hpe.com
+appVersion: 0.0.0
+annotations:
+  artifacthub.io/images: |
+    - name: cray-console-operator
+      image: artifactory.algol60.net/csm-docker/stable/cray-console-operator:0.0.0
+    - name: alpine
+      image: alpine:latest
+  artifacthub.io/license: MIT
