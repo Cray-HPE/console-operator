@@ -21,28 +21,21 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-apiVersion: v2
-name: cray-console-operator
-version: 0.0.0
-description: Kubernetes resources for cray-console-operator
-keywords:
-  - cray-console
-  - cray-console-operator
-home: https://github.com/Cray-HPE/console-operator
-sources:
-- https://github.com/Cray-HPE/console-operator
-dependencies:
-- name: cray-service
-  version: ^7.0.0
-  repository: https://artifactory.algol60.net/artifactory/csm-helm-charts/
-maintainers:
-- name: dlaine-hpe
-  email: laine@hpe.com
-appVersion: 0.0.0
-annotations:
-  artifacthub.io/images: |
-    - name: cray-console-operator
-      image: artifactory.algol60.net/csm-docker/stable/cray-console-operator:0.0.0
-    - name: alpine
-      image: alpine:latest
-  artifacthub.io/license: MIT
+name: Lint, test, and scan Helm charts
+on:
+  pull_request:
+    branches:
+      - master
+      - release/**
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+jobs:
+  lint-test-scan:
+    uses: Cray-HPE/.github/.github/workflows/charts-lint-test-scan.yml@main
+    with:
+      lint-charts: ${{ github.event_name == 'pull_request' }}
+      scan-images: false
+      scan-charts: false
+    secrets:
+      snyk-token: ${{ secrets.SNYK_TOKEN }}
