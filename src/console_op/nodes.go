@@ -223,11 +223,12 @@ func updateNodeCounts(numMtnNodes, numRvrNodes int) {
 	//  wiggle room, not strictly needed
 	newMtn := int(math.Ceil(float64(numMtnNodes)/float64(newNumPods)) + 1)
 	newRvr := int(math.Ceil(float64(numRvrNodes)/float64(newNumPods)) + 1)
-	log.Printf("New number of nodes per pod- Mtn: %d, Rvr: %d", newMtn, newRvr)
 
 	// push new numbers where they need to go
 	if newRvr != numRvrNodesPerPod || newMtn != numMtnNodesPerPod {
 		// something changed so we need to update
-		updateNodesPerPod(newMtn, newRvr)
+		log.Printf("New number of nodes per pod- Mtn: %d, Rvr: %d", newMtn, newRvr)
+		numRvrNodesPerPod = newRvr
+		numMtnNodesPerPod = newMtn
 	}
 }

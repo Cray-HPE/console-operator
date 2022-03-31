@@ -33,7 +33,7 @@ sources:
 - https://github.com/Cray-HPE/console-operator
 dependencies:
 - name: cray-service
-  version: ^7.0.0
+  version: ^8.0.0
   repository: https://artifactory.algol60.net/artifactory/csm-helm-charts/
 maintainers:
 - name: dlaine-hpe

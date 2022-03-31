@@ -308,11 +308,16 @@ func main() {
 	http.HandleFunc("/console-operator/liveness", doLiveness)
 	http.HandleFunc("/console-operator/readiness", doReadiness)
 	http.HandleFunc("/console-operator/health", doHealth)
+
+	// Debug endpoints
 	http.HandleFunc("/console-operator/info", doInfo)
 	http.HandleFunc("/console-operator/clearData", doClearData)
 	http.HandleFunc("/console-operator/suspend", doSuspend)
 	http.HandleFunc("/console-operator/resume", doResume)
+
+	// Functions for other services to query this service
 	http.HandleFunc("/console-operator/v0/getNodePod", doGetNodePod)
+	http.HandleFunc("/console-operator/v0/getNumNodesPerPod", doGetNumNodesPerPod)
 	http.HandleFunc("/console-operator/v0/setMaxNodesPerPod", doSetMaxNodesPerPod)
 
 	// spin the server in a separate thread so main can wait on an os

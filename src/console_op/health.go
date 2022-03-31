@@ -221,6 +221,37 @@ func doSetMaxNodesPerPod(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// NumNodeData - Simple struct to return error information
+type NumNodeData struct {
+	NumRvrNodes int `json:"numRvr"` // max number of river nodes per pod
+	NunMtnNodes int `json:"numMtn"` // max number of mountain nodes per pod
+}
+
+// Get the target number of nodes per console-node pod
+func doGetNumNodesPerPod(w http.ResponseWriter, r *http.Request) {
+	// API to set the max number of nodes per pod
+	log.Printf("Call to setMaxNodesPerPod...")
+
+	// only allow 'GET' calls
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", "GET")
+		sendJSONError(w, http.StatusMethodNotAllowed,
+			fmt.Sprintf("(%s) Not Allowed", r.Method))
+		return
+	}
+
+	// Load up the return data structure
+	var numNodes NumNodeData
+	numNodes.NumRvrNodes = numRvrNodesPerPod
+	numNodes.NunMtnNodes = numMtnNodesPerPod
+
+	log.Printf("  Sending Rvr:%d, Mtn:%d", numRvrNodesPerPod, numMtnNodesPerPod)
+
+	// write the response
+	SendResponseJSON(w, http.StatusOK, numNodes)
+	return
+}
+
 // NodePodPair - information for which console-node pod an xname is controlled by
 type NodePodPair struct {
 	PodID    string

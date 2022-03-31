@@ -29,8 +29,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
-	"strings"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,10 +41,6 @@ import (
 // global vars for k8s access
 var k8sConfig *rest.Config = nil
 var k8sClientset *kubernetes.Clientset = nil
-
-// File to hold target number of node information - it will reside on
-// a shared file system so console-node pods can read what is set here
-const targetNodeFile string = "/var/log/console/TargetNodes.txt"
 
 // Function to initialize k8s cluster access
 func initK8s() {
@@ -153,66 +147,4 @@ func updateReplicaCount(newReplicaCnt int) {
 
 	// only set the global number when successful
 	numNodePods = newReplicaCnt
-}
-
-// keep track of the number of file access errors
-var numFileErrors = 0
-
-// Update the number of consoles per node pod
-func updateNodesPerPod(newNumMtn, newNumRvr int) {
-	// NOTE: for the time being we will just put this information
-	//  into a simple text file on a pvc shared with console-operator
-	//  and console-node pods.  The console-operator will write changes
-	//  and the console-node pods will read periodically for changes.
-	//  This mechanism can be made more elegant later if needed but it
-	//  needs to be something that can be picked up by all console-node
-	//  pods without restarting them.  It is complicated to update all
-	//  running pods through a direct rest interface...
-
-	// make sure the directory exists to put the file in place
-	pos := strings.LastIndex(targetNodeFile, "/")
-	if pos < 0 {
-		log.Printf("Error: incorrect target node file name: %s", targetNodeFile)
-		return
-	}
-	targetNodeDir := targetNodeFile[:pos]
-	if _, err := os.Stat(targetNodeDir); os.IsNotExist(err) {
-		log.Printf("Target node directory does not exist, creating: %s", targetNodeDir)
-		err = os.MkdirAll(targetNodeDir, 0766)
-		if err != nil {
-			// If we have too many attempts fail, complain loudly
-			if numFileErrors > 3 {
-				log.Panicf("Multiple file access errors, unable to create dir: %s", err)
-			}
-			log.Printf("Unable to create dir: %s", err)
-			numFileErrors += 1
-			return
-		}
-	}
-
-	// open the file for writing
-	log.Printf("Opening target node file for output: %s", targetNodeFile)
-	cf, err := os.OpenFile(targetNodeFile, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0666)
-	if err != nil {
-		// If we have too many attempts fail, complain loudly
-		if numFileErrors > 3 {
-			log.Panicf("Multiple file access errors, unable to open config file to write: %s", err)
-		}
-		log.Printf("Error: Unable to open config file to write: %s", err)
-		numFileErrors += 1
-		return
-	}
-
-	// reset the file error count and make sure file gets closed
-	numFileErrors = 0
-	defer cf.Close()
-
-	// The file only consists of two lines, write them
-	cf.WriteString(fmt.Sprintf("River:%d\n", newNumRvr))
-	cf.WriteString(fmt.Sprintf("Mountain:%d\n", newNumMtn))
-
-	// only update the stored values after correctly set in file - this should
-	// trigger a retry if something goes wrong
-	numMtnNodesPerPod = newNumMtn
-	numRvrNodesPerPod = newNumRvr
 }
