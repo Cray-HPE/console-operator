@@ -71,7 +71,8 @@ RUN echo 'alias suspend="curl -sk -X POST http://localhost:26777/console-operato
 RUN echo 'alias resume="curl -sk -X POST http://localhost:26777/console-operator/resume"' >> /app/bashrc
 RUN echo 'alias clearData="curl -sk -X DELETE http://localhost:26777/console-operator/clearData"' >> /app/bashrc
 
-# set to user nobody so this won't run as root
+# change owner of app dir and set to user nobody so this won't run as root
+RUN chown -v 65534:65534 /app
 USER 65534:65534
 
 ENTRYPOINT ["/app/console_operator"]

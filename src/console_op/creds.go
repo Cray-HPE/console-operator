@@ -40,8 +40,8 @@ import (
 
 // Location of the Mountain BMC console ssh key pair files.
 // These are obtained or generated when the pod is created.
-const mountainConsoleKey string = "/var/log/console/conman.key"
-const mountainConsoleKeyPub string = "/var/log/console/conman.key.pub"
+const mountainConsoleKey string = "/app/conman.key"
+const mountainConsoleKeyPub string = "/app/conman.key.pub"
 
 // Location of the Kubernetes service account token used to authenticate
 // to Vault.  This is part of the pod deployment.

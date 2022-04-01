@@ -25,4 +25,4 @@
 # This is invoked by the console-operator pod to generate the Mountain node
 # console ssh key pair as required.
 
-/usr/bin/ssh-keygen -qf /var/log/console/conman.key -N '' <<<y
+/usr/bin/ssh-keygen -qf /app/conman.key -N '' <<<y
