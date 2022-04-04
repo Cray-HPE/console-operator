@@ -81,23 +81,6 @@ cray-service:
           path: /console-operator/readiness
         initialDelaySeconds: 5
         periodSeconds: 60
-      volumeMounts:
-      - mountPath: /var/log/
-        name: cray-console-logs
-  volumes:
-    cray-console-logs:
-      name: cray-console-logs
-      persistentVolumeClaim:
-        claimName: cray-console-operator-data-claim
-  storageClass: ceph-cephfs-external
-  persistentVolumeClaims:
-    data-claim:
-      name: data-claim  # will be prefixed with cray-console-operator
-      accessModes:
-      - ReadWriteMany
-      resources:
-        requests:
-          storage: 100Gi
   ingress:
     enabled: true
     uri: " "
