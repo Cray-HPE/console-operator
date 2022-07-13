@@ -86,7 +86,7 @@ func getRedfishEndpoints() ([]redfishEndpoint, error) {
 	}
 
 	// Query hsm to get the redfish endpoints
-	URL := "http://cray-smd/hsm/v1/Inventory/RedfishEndpoints"
+	URL := "http://cray-smd/hsm/v2/Inventory/RedfishEndpoints"
 	data, _, err := getURL(URL, nil)
 	if err != nil {
 		log.Printf("Unable to get redfish endpoints from hsm:%s", err)
@@ -112,7 +112,7 @@ func getStateComponents() ([]stateComponent, error) {
 	}
 
 	// get the state components from hsm
-	URL := "http://cray-smd/hsm/v1/State/Components"
+	URL := "http://cray-smd/hsm/v2/State/Components"
 	data, _, err := getURL(URL, nil)
 	if err != nil {
 		log.Printf("Unable to get state component information from hsm:%s", err)
