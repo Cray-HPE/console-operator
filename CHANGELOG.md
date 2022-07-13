@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+ - CASMCMS-8016: Update hsm api to v2.
+
 ### Added
 
 ## [1.4.0] - 2022-07-12
