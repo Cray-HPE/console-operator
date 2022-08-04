@@ -45,6 +45,16 @@ type nodeConsoleInfo struct {
 	Role     string // role of the node
 }
 
+// Function to determine if a node is Mountain hardware
+func (node nodeConsoleInfo) isMountain() bool {
+	return node.Class == "Mountain" || node.Class == "Hill"
+}
+
+// Function to determine if a node is River hardware
+func (node nodeConsoleInfo) isRiver() bool {
+	return node.Class == "River"
+}
+
 // Provide a function to convert struct to string
 func (nc nodeConsoleInfo) String() string {
 	return fmt.Sprintf("NodeName:%s, BmcName:%s, BmcFqdn:%s, Class:%s, NID:%d, Role:%s",
