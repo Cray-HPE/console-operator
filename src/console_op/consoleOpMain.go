@@ -95,7 +95,7 @@ func doHardwareUpdate(updateAll, redeployMtnKeys bool) (updateSuccess, keySucces
 			// add the item to the cached items and record as new
 			nodeCache[n.NodeName] = n
 			newNodes = append(newNodes, n)
-			if n.Class == "Mountain" {
+			if n.isMountain() {
 				newMtnNodes = append(newMtnNodes, n)
 			}
 			log.Printf("Found new node: %s", n.String())
@@ -127,7 +127,7 @@ func doHardwareUpdate(updateAll, redeployMtnKeys bool) (updateSuccess, keySucces
 		}
 
 		// gather all mountain nodes if forcing full key regeneration
-		if redeployMtnKeys && v.Class == "Mountain" {
+		if redeployMtnKeys && v.isMountain() {
 			newMtnNodes = append(newMtnNodes, v)
 		}
 
@@ -146,9 +146,9 @@ func doHardwareUpdate(updateAll, redeployMtnKeys bool) (updateSuccess, keySucces
 			removedNodes = append(removedNodes, v)
 		} else {
 			// update counts of nodes
-			if v.Class == "River" {
+			if v.isRiver() {
 				numRvrNodes++
-			} else if v.Class == "Mountain" {
+			} else if v.isMountain() {
 				numMtnNodes++
 			} else {
 				log.Printf("Error: unknown node class: %s on node: %s", v.Class, v.NodeName)
