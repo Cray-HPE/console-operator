@@ -340,7 +340,7 @@ func ensureMountainConsoleKeysDeployed(nodes []nodeConsoleInfo) bool {
 	// both nodes.
 	mtnBmcList := make(map[string]string)
 	for _, nodeCi := range nodes {
-		if nodeCi.Class == "Mountain" {
+		if nodeCi.isMountain() {
 			mtnBmcList[nodeCi.BmcFqdn] = nodeCi.BmcName
 		}
 	}
