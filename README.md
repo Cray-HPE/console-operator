@@ -2,7 +2,7 @@
 This is the Console Operator Service.  It is responsible for managing the
 Console Node pods.  It monitors the hardware on the system and scales 
 the number of cray-console-node replicas to handle the number of consoles,
-sets the number of consoles per cray-console-node pod, and moniters the
+sets the number of consoles per cray-console-node pod, and monitors the
 health of the Console Node pods.
 
 ## Related Software
