@@ -54,11 +54,11 @@ const vaultBase = "http://cray-vault.vault:8200/v1"
 // If this secret does not exist Vault will be asked to create it.
 const vaultBmcKeyName = "mountain-bmc-console"
 
-// The Vault key type used when generating a new key intented for use with
-// Mountian console ssh.
+// The Vault key type used when generating a new key intended for use with
+// Mountain console ssh.
 const vaultBmcKeyAlg = "rsa-2048"
 
-// Struct to hold the overall scsd reposnse
+// Struct to hold the overall scsd response
 type scsdList struct {
 	Targets []scsdNode `json:"Targets"`
 }
@@ -99,12 +99,12 @@ func vaultGeneratePrivateKey(vaultToken string) (response []byte, responseCode i
 	}
 
 	if responseCode != 204 {
-		// Return an error for any unhandled http reposponse code.
+		// Return an error for any unhandled http response code.
 		log.Printf(
-			"Unexpected response from Vault when generating the key: %s  Http repsonse code: %d",
+			"Unexpected response from Vault when generating the key: %s  Http response code: %d",
 			response, responseCode)
 		return response, responseCode, fmt.Errorf(
-			"Unexpected response from Vault when generating the key: %s  Http repsonse code: %d",
+			"Unexpected response from Vault when generating the key: %s  Http response code: %d",
 			response, responseCode)
 	}
 
@@ -144,11 +144,11 @@ func vaultExportPrivateKey(vaultToken string) (pvtKey string, response []byte, r
 		}
 		return pvtKey.String(), response, 200, nil
 	} else {
-		// Return an error for any unhandled http reposponse code.
+		// Return an error for any unhandled http response code.
 		log.Printf(
-			"Unexpected response from Vault: %s  Http repsonse code: %d",
+			"Unexpected response from Vault: %s  Http response code: %d",
 			response, responseCode)
-		return "", response, responseCode, fmt.Errorf("Unexpected response from Vault: %s  Http repsonse code: %d",
+		return "", response, responseCode, fmt.Errorf("Unexpected response from Vault: %s  Http response code: %d",
 			response, responseCode)
 	}
 }
@@ -157,7 +157,7 @@ func vaultExportPrivateKey(vaultToken string) (pvtKey string, response []byte, r
 // only piece of the key pair which is stored in Vault.  The public key piece is
 // created from the private via the standard ssh-keygen utility.
 // If the private key can not be found then vault will be asked to generate and
-// reuturn the new key.
+// return the new key.
 func vaultGetPrivateKey(vaultToken string) (pvtKey string, err error) {
 	// Ask vault for the existing key
 	pvtKey, response, responseCode, err := vaultExportPrivateKey(vaultToken)
@@ -178,7 +178,7 @@ func vaultGetPrivateKey(vaultToken string) (pvtKey string, err error) {
 		// Handle any unexpected http error when generating the key.
 		if responseCode != 204 {
 			return "", fmt.Errorf(
-				"Unexpected response from Vault when generating the key: %s  Http repsonse code: %d",
+				"Unexpected response from Vault when generating the key: %s  Http response code: %d",
 				response, responseCode)
 		}
 
@@ -189,7 +189,7 @@ func vaultGetPrivateKey(vaultToken string) (pvtKey string, err error) {
 		}
 		if responseCode != 200 {
 			return "", fmt.Errorf(
-				"Unexpected response from Vault when requesting the key: %s  Http repsonse code: %d",
+				"Unexpected response from Vault when requesting the key: %s  Http response code: %d",
 				response, responseCode)
 		}
 
@@ -199,13 +199,13 @@ func vaultGetPrivateKey(vaultToken string) (pvtKey string, err error) {
 	} else {
 		// Handle an unexpected http response when initially requesting the key.
 		return "", fmt.Errorf(
-			"Unexpected response from Vault when requesting the key: %s  Http repsonse code: %d",
+			"Unexpected response from Vault when requesting the key: %s  Http response code: %d",
 			response, responseCode)
 	}
 }
 
 // Obtain Mountain node BMC credentials from Vault and stage them to the
-// local file syetem.  A specific error will be returned in the event of
+// local file system.  A specific error will be returned in the event of
 // any issues.
 func vaultGetMountainConsoleCredentials() error {
 	// Generate an ssh key pair (/etc/conman.key and /etc/conman.key.pub)
@@ -384,7 +384,7 @@ func ensureMountainConsoleKeysDeployed(nodes []nodeConsoleInfo) bool {
 		}
 	}
 	// TBD - Beyond just logging the status, determine if there is a more preferred way
-	// to deal with any specific failures to deploy a BMC ssh cosole key.
+	// to deal with any specific failures to deploy a BMC ssh console key.
 	// Scsd response example:
 	//  {"Xname":"x5000c1s2b0","StatusCode":204,"StatusMsg":"OK"}
 	// Example errors:
