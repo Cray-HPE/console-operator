@@ -43,7 +43,7 @@ cray-service:
     cray-console-operator:
       name: cray-console-operator
       image:
-        repository: artifactory.algol60.net/csm-docker/stable/cray-console-operator
+        repository: artifactory.algol60.net/csm-docker/S-T-A-B-L-E/cray-console-operator
         # tag defaults to chart appVersion
       ports:
         - name: http

@@ -42,7 +42,7 @@ appVersion: 0.0.0-image
 annotations:
   artifacthub.io/images: |
     - name: cray-console-operator
-      image: artifactory.algol60.net/csm-docker/stable/cray-console-operator:0.0.0-image
+      image: artifactory.algol60.net/csm-docker/S-T-A-B-L-E/cray-console-operator:0.0.0-image
     - name: alpine
       image: alpine:latest
   artifacthub.io/license: MIT

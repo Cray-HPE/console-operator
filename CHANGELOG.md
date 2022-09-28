@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+ - CASMCMS-8252: Enabled building of unstable artifacts
+ - CASMCMS-8252: Updated header of update_versions.conf to reflect new tool options
+
 ### Fixed
  - Spelling corrections.
  - CASMCMS-8252: Update Chart with correct image and chart version strings during builds.
