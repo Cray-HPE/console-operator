@@ -23,7 +23,7 @@
 # Dockerfile for cray-console-operator service
 
 # Build will be where we build the go binary
-FROM arti.dev.cray.com/baseos-docker-master-local/golang:1.14-alpine3.12 as build
+FROM artifactory.algol60.net/csm-docker/stable/docker.io/library/golang:1.14-alpine3.12 as build
 RUN set -eux \
     && apk add --upgrade --no-cache apk-tools \
     && apk update \
