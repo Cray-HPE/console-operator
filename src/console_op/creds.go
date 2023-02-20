@@ -34,6 +34,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/tidwall/gjson"
 )
@@ -293,22 +294,12 @@ func generateMountainConsoleCredentials() error {
 	return nil
 }
 
-// Ensure that Mountain node console credentials are properly deployed.
-func ensureMountainConsoleKeysDeployed(nodes []nodeConsoleInfo) bool {
-	// Ensure that we have a console ssh key pair.  If the key pair
-	// is not on the local file system then obtain it from Vault.  If
-	// Vault is not available or we are otherwise unable to obtain the key
-	// pair then generate it and log a message.  We want to minimize any
-	// loss of console logs or console access due to a missing ssh
-	// key pair.
-
-	// return if this succeeded
-	retVal := true
-
+// Ensure that Mountain node console credentials have been generated.
+func ensureMountainConsoleKeysExist() bool {
 	// if running in debug mode there won't be any nodes or vault present
 	if debugOnly {
 		log.Print("Running in debug mode - skipping mountain cred generation")
-		return retVal
+		return true
 	}
 
 	// Check that we have key pair files on local storage
@@ -325,6 +316,55 @@ func ensureMountainConsoleKeysDeployed(nodes []nodeConsoleInfo) bool {
 				return false
 			}
 		}
+	}
+	return true
+}
+
+func doMountainCredsUpdates(ch chan nodeConsoleInfo) {
+	nodesToUpdate := make(map[string]nodeConsoleInfo)
+	for {
+		select {
+		case node := <-ch:
+			nodesToUpdate[node.NodeName] = node
+		case <-time.After(time.Second):
+			if len(nodesToUpdate) > 0 {
+				nodesToUpdate = doMountainCredsUpdate(nodesToUpdate)
+			}
+		}
+	}
+}
+
+func doMountainCredsUpdate(nodesToUpdate map[string]nodeConsoleInfo) (remaining map[string]nodeConsoleInfo) {
+	nodeList := make([]string, len(nodesToUpdate))
+	for _, node := range nodesToUpdate {
+		nodeList.append(nodeList, node)
+	}
+	success, reply = deployMountainConsoleKeys(nodes)
+	if success {
+		return make(map[string]nodeConsoleInfo)
+	}
+	for _, t := range reply.Targets {
+		if t.StatusCode == 204 {
+			// Node update was successful and the node can be removed from the update list
+			delete(nodesToUpdate, t.Xname)
+		}
+	}
+	return nodesToUpdate
+}
+
+// Deploy mountain node console credentials.
+func deployMountainConsoleKeys(nodes []nodeConsoleInfo) bool {
+	// Ensure that we have a console ssh key pair.  If the key pair
+	// is not on the local file system then obtain it from Vault.  If
+	// Vault is not available or we are otherwise unable to obtain the key
+	// pair then generate it and log a message.  We want to minimize any
+	// loss of console logs or console access due to a missing ssh
+	// key pair.
+
+	// if running in debug mode there won't be any nodes or vault present
+	if debugOnly {
+		log.Print("Running in debug mode - skipping mountain cred generation")
+		return true
 	}
 
 	// Read in the public key.
@@ -367,14 +407,14 @@ func ensureMountainConsoleKeysDeployed(nodes []nodeConsoleInfo) bool {
 	data, rc, err := postURL(URL, jsonScsdParam, nil)
 
 	// consider any http return code < 400 as success
-	retVal = rc < 300
+	success := rc < 300
 
 	// parse the return data
 	scsdReply := scsdList{}
 	err = json.Unmarshal(data, &scsdReply)
 	if err != nil {
 		log.Printf("Error unmarshalling the reply from scsd: %s", err)
-		return retVal
+		return success
 	}
 	for _, t := range scsdReply.Targets {
 		if t.StatusCode != 204 {
@@ -396,5 +436,5 @@ func ensureMountainConsoleKeysDeployed(nodes []nodeConsoleInfo) bool {
 	// BMC and public key basis.  This could be used in the future to reduce the time
 	// to redeploy all keys.
 
-	return retVal
+	return success
 }

@@ -136,7 +136,7 @@ func updateCachedNodeData(ds DataService, updateAll bool) (success bool, newNode
 }
 
 // Function to do a hardware update check
-func doHardwareUpdate(ds DataService, ns NodeService, updateAll, redeployMtnKeys bool) (updateSuccess, keySuccess bool) {
+func doHardwareUpdate(ds DataService, ns NodeService, updateAll bool, ch chan nodeConsoleInfo) (updateSuccess bool) {
 	// record the time of the hardware update attempt
 	hardwareUpdateTime = time.Now().Format(time.RFC3339)
 
@@ -161,36 +161,20 @@ func doHardwareUpdate(ds DataService, ns NodeService, updateAll, redeployMtnKeys
 	ns.updateNodeCounts(numMtnNodes, numRvrNodes)
 
 	// Update mountain node keys
-	keySuccess := true
 	if numMtnNodes > 0 {
+		// Generate keys for mountain nodes if needed
+		ensureMountainConsoleKeysExist()
+
 		var newMtnNodes []nodeConsoleInfo = nil
-		if redeployMtnKeys {
-			log.Printf("Forcing update of all mtn console keys")
-			for _, n := range nodeCache {
-				if n.isMountain() {
-					newMtnNodes = append(newMtnNodes, n)
-				}
-			}
-		} else {
-			for _, n := range newNodes {
-				if n.isMountain() {
-					newMtnNodes = append(newMtnNodes, n)
-				}
-			}
-		}
-		// make sure the console ssh key has been deployed on all new mountain nodes
-		// NOTE: do this last so console-node pods can start to spin up and acquire
-		//  nodes while key deployment is happening - may take a while.
-		if len(newMtnNodes) > 0 {
-			if ok := ensureMountainConsoleKeysDeployed(newMtnNodes); !ok {
-				log.Printf("Mountain key deployment failed")
-				keySuccess = false
+		for _, n := range newNodes {
+			if n.isMountain() {
+				ch <- n
 			}
 		}
 	}
 
 	// return status
-	return updateSuccess, keySuccess
+	return updateSuccess
 }
 
 // Main loop for console-operator stuff
@@ -199,8 +183,9 @@ func watchHardware(ds DataService, ns NodeService) {
 	// is actually up to date
 	forceUpdateCnt := 0
 
-	// keep track of if the mtn key deployment succeeded
-	updateMtnKey := true
+	// setup routine for pushing mountain keys
+	ch := make(chan nodeConsoleInfo, 100)
+	go doMountainCredsUpdates(ch)
 
 	// loop forever looking for updates to the hardware
 	for {
@@ -209,7 +194,7 @@ func watchHardware(ds DataService, ns NodeService) {
 		//  do not perform the hardware update check
 		if !inShutdown {
 			// do the update
-			updateSucess, keySuccess := doHardwareUpdate(ds, ns, forceUpdateCnt == 0, updateMtnKey)
+			updateSucess := doHardwareUpdate(ds, ns, forceUpdateCnt == 0, ch)
 
 			// set up for next update - normal countdown
 			forceUpdateCnt--
@@ -222,9 +207,6 @@ func watchHardware(ds DataService, ns NodeService) {
 			if !updateSucess {
 				forceUpdateCnt = 0
 			}
-
-			// if the mtn key deployment failed, force update next time
-			updateMtnKey = !keySuccess
 		}
 
 		// There are times we want to wait for a little before starting a new
