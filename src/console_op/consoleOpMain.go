@@ -75,93 +75,42 @@ var heartbeatCheckPeriodSec int = 15
 // Global var to signal we are shutting down and prevent periodic checks from happening
 var inShutdown bool = false
 
-// Function to do a hardware update check
-func doHardwareUpdate(ds DataService, ns NodeService, updateAll, redeployMtnKeys bool) (updateSuccess, keySuccess bool) {
+func updateCachedNodeData(ds DataService, updateAll bool) (success bool, newNodes []nodeConsoleInfo) {
 	// return if the console-data update succeeded
 	updateSuccess = true
-	keySuccess = true
-
-	// record the time of the hardware update attempt
-	hardwareUpdateTime = time.Now().Format(time.RFC3339)
 
 	// get the current endpoints from hsm
 	currNodes := ns.getCurrentNodesFromHSM()
+	currNodesMap := make(map[string]nodeConsoleInfo)
+	for _, n := range currNodes {
+		currNodesMap[n.NodeName] = n
+	}
 
-	// look for new nodes
+	// Find new nodes that are in the currNodes but not in nodeCache
 	var newNodes []nodeConsoleInfo = nil
-	var newMtnNodes []nodeConsoleInfo = nil
 	for _, n := range currNodes {
 		if _, found := nodeCache[n.NodeName]; !found {
-			// add the item to the cached items and record as new
-			nodeCache[n.NodeName] = n
 			newNodes = append(newNodes, n)
-			if n.isMountain() {
-				newMtnNodes = append(newMtnNodes, n)
-			}
 			log.Printf("Found new node: %s", n.String())
 		}
 	}
 
-	// if we are forcing an update of all nodes, do that here
-	if updateAll {
-		log.Printf("Forcing inventory update of all %d nodes", len(nodeCache))
-		newNodes = make([]nodeConsoleInfo, 0, len(nodeCache))
-	}
-
-	// if we are forcing an update of mtn keys, do that here
-	if redeployMtnKeys {
-		log.Printf("Forcing update of all mtn console keys")
-		newMtnNodes = make([]nodeConsoleInfo, 0, len(nodeCache))
-	}
-
-	// look for removed nodes
-	// NOTE: yes this is n^2 performance but should not be huge numbers
-	//  can make this more performant later if needed
+	// Find nodes to remove that are in the nodeCache but not in currNodes
 	var removedNodes []nodeConsoleInfo = nil
-	numRvrNodes := 0
-	numMtnNodes := 0
-	for k, v := range nodeCache {
-		// generate list of all if forcing a complete update
-		if updateAll {
-			newNodes = append(newNodes, v)
+	for _, n := range nodeCache {
+		if _, found := currNodesMap[n.NodeName]; !found {
+			removedNodes = append(removedNodes, n)
+			log.Printf("Removing node: %s", n.String())
 		}
-
-		// gather all mountain nodes if forcing full key regeneration
-		if redeployMtnKeys && v.isMountain() {
-			newMtnNodes = append(newMtnNodes, v)
-		}
-
-		// see if this node is still in the current node list
-		found := false
-		for _, n := range currNodes {
-			if k == n.NodeName {
-				found = true
-				break
-			}
-		}
-
-		// if this item wasn't found, add to the list of removed nodes
-		if !found {
-			log.Printf("Removing node: %s", k)
-			removedNodes = append(removedNodes, v)
-		} else {
-			// update counts of nodes
-			if v.isRiver() {
-				numRvrNodes++
-			} else if v.isMountain() {
-				numMtnNodes++
-			} else {
-				log.Printf("Error: unknown node class: %s on node: %s", v.Class, v.NodeName)
-			}
-		}
-	}
-
-	// update the nodeCache with the removed nodes
-	for _, n := range removedNodes {
-		delete(nodeCache, n.NodeName)
 	}
 
 	// add the new nodes to console-data
+	nodesToUpdate := newNodes
+	if updateAll {
+		nodesToUpdate = currNodes
+		log.Printf("Forcing inventory update of all %d nodes", len(nodeCache))
+	}
+
 	if len(newNodes) > 0 {
 		if ok := ds.dataAddNodes(newNodes); !ok {
 			log.Printf("New data send to console-data failed")
@@ -178,18 +127,65 @@ func doHardwareUpdate(ds DataService, ns NodeService, updateAll, redeployMtnKeys
 		log.Printf("No nodes being removed")
 	}
 
+	// If the data updates succeeded we can update the cache
+	if updateSuccess {
+		nodeCache = currNodesMap
+	}
+
+	return updateSuccess, newNodes
+}
+
+// Function to do a hardware update check
+func doHardwareUpdate(ds DataService, ns NodeService, updateAll, redeployMtnKeys bool) (updateSuccess, keySuccess bool) {
+	// record the time of the hardware update attempt
+	hardwareUpdateTime = time.Now().Format(time.RFC3339)
+
+	// Update the cache and data in console-data
+	updateSuccess, newNodes := updateCachedNodeData(ds, updateAll)
+
 	// recalculate the number pods needed and how many assigned to each pod
 	// NOTE: do this every time in case something else made changes on the system
 	//  like number of console-node replicas deployed
+	numRvrNodes := 0
+	numMtnNodes := 0
+	for _, v := range nodeCache {
+		// update counts of nodes
+		if v.isRiver() {
+			numRvrNodes++
+		} else if v.isMountain() {
+			numMtnNodes++
+		} else {
+			log.Printf("Error: unknown node class: %s on node: %s", v.Class, v.NodeName)
+		}
+	}
 	ns.updateNodeCounts(numMtnNodes, numRvrNodes)
 
-	// make sure the console ssh key has been deployed on all new mountain nodes
-	// NOTE: do this last so console-node pods can start to spin up and acquire
-	//  nodes while key deployment is happening - may take a while.
-	if len(newMtnNodes) > 0 {
-		if ok := ensureMountainConsoleKeysDeployed(newMtnNodes); !ok {
-			log.Printf("Mountain key deployment failed")
-			keySuccess = false
+	// Update mountain node keys
+	keySuccess := true
+	if numMtnNodes > 0 {
+		var newMtnNodes []nodeConsoleInfo = nil
+		if redeployMtnKeys {
+			log.Printf("Forcing update of all mtn console keys")
+			for _, n := range nodeCache {
+				if n.isMountain() {
+					newMtnNodes = append(newMtnNodes, n)
+				}
+			}
+		} else {
+			for _, n := range newNodes {
+				if n.isMountain() {
+					newMtnNodes = append(newMtnNodes, n)
+				}
+			}
+		}
+		// make sure the console ssh key has been deployed on all new mountain nodes
+		// NOTE: do this last so console-node pods can start to spin up and acquire
+		//  nodes while key deployment is happening - may take a while.
+		if len(newMtnNodes) > 0 {
+			if ok := ensureMountainConsoleKeysDeployed(newMtnNodes); !ok {
+				log.Printf("Mountain key deployment failed")
+				keySuccess = false
+			}
 		}
 	}
 
