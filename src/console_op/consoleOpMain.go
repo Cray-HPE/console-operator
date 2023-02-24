@@ -1,7 +1,7 @@
 //
 //  MIT License
 //
-//  (C) Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+//  (C) Copyright 2021-2023 Hewlett Packard Enterprise Development LP
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -56,11 +56,11 @@ var numNodePods int = -1
 var numRvrNodesPerPod int = -1
 var numMtnNodesPerPod int = -1
 
-// NOTE: the maximum number of river/mountain nodes per pod are
-//  based on testing on Shasta systems at this time.  These numbers
-//  may need to be adjusted with more testing time on large systems.
-//  These are considered to be hard maximums and pods will be scaled
-//  so no pod will try to connect to more than this.
+// The maximum number of river/mountain nodes per pod are
+// based on testing on Shasta systems at this time.  These numbers
+// may need to be adjusted with more testing time on large systems.
+// These are considered to be hard maximums and pods will be scaled
+// so no pod will try to connect to more than this.
 var maxMtnNodesPerPod int = 750
 var maxRvrNodesPerPod int = 2000
 
