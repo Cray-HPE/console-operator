@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.6.3] - 2023-02-24
+### Changed
+- CASMCMS-8423 - linting changes for new gofmt version.
+
 ## [1.6.2] - 2023-02-03
 ### Changed
 - CASMTRIAGE-4899 - fix post-install and post-update hooks.
