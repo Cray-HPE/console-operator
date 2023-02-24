@@ -27,7 +27,8 @@ metadata:
   name: console-post-upgrade
   namespace: "services"
   annotations:
-    "helm.sh/hook": "post-upgrade"
+    "helm.sh/hook": post-upgrade,post-install
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
   template:
     spec:
