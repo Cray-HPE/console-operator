@@ -75,9 +75,9 @@ var heartbeatCheckPeriodSec int = 15
 // Global var to signal we are shutting down and prevent periodic checks from happening
 var inShutdown bool = false
 
-func updateCachedNodeData(ds DataService, updateAll bool) (success bool, newNodes []nodeConsoleInfo) {
+func updateCachedNodeData(ds DataService, ns NodeService, updateAll bool) (bool, []nodeConsoleInfo) {
 	// return if the console-data update succeeded
-	updateSuccess = true
+	updateSuccessful := true
 
 	// get the current endpoints from hsm
 	currNodes := ns.getCurrentNodesFromHSM()
@@ -108,13 +108,13 @@ func updateCachedNodeData(ds DataService, updateAll bool) (success bool, newNode
 	nodesToUpdate := newNodes
 	if updateAll {
 		nodesToUpdate = currNodes
-		log.Printf("Forcing inventory update of all %d nodes", len(nodeCache))
+		log.Printf("Forcing inventory update of all %d nodes", len(nodesToUpdate))
 	}
 
-	if len(newNodes) > 0 {
-		if ok := ds.dataAddNodes(newNodes); !ok {
+	if len(nodesToUpdate) > 0 {
+		if ok := ds.dataAddNodes(nodesToUpdate); !ok {
 			log.Printf("New data send to console-data failed")
-			updateSuccess = false
+			updateSuccessful = false
 		}
 	} else {
 		log.Printf("No new nodes to add")
@@ -128,20 +128,22 @@ func updateCachedNodeData(ds DataService, updateAll bool) (success bool, newNode
 	}
 
 	// If the data updates succeeded we can update the cache
-	if updateSuccess {
+	if updateSuccessful {
 		nodeCache = currNodesMap
 	}
 
-	return updateSuccess, newNodes
+	// newNodes are returned, not nodesToUpdate because we only want to deploy
+	// 		mountain keys for new nodes, not the during the periodic updateAll.
+	return updateSuccessful, newNodes
 }
 
 // Function to do a hardware update check
-func doHardwareUpdate(ds DataService, ns NodeService, updateAll bool, ch chan nodeConsoleInfo) (updateSuccess bool) {
+func doHardwareUpdate(ds DataService, ns NodeService, updateAll bool, mountainCredsUpdateChannel chan nodeConsoleInfo) bool {
 	// record the time of the hardware update attempt
 	hardwareUpdateTime = time.Now().Format(time.RFC3339)
 
 	// Update the cache and data in console-data
-	updateSuccess, newNodes := updateCachedNodeData(ds, updateAll)
+	updateSuccessful, newNodes := updateCachedNodeData(ds, ns, updateAll)
 
 	// recalculate the number pods needed and how many assigned to each pod
 	// NOTE: do this every time in case something else made changes on the system
@@ -165,16 +167,15 @@ func doHardwareUpdate(ds DataService, ns NodeService, updateAll bool, ch chan no
 		// Generate keys for mountain nodes if needed
 		ensureMountainConsoleKeysExist()
 
-		var newMtnNodes []nodeConsoleInfo = nil
 		for _, n := range newNodes {
 			if n.isMountain() {
-				ch <- n
+				mountainCredsUpdateChannel <- n
 			}
 		}
 	}
 
 	// return status
-	return updateSuccess
+	return updateSuccessful
 }
 
 // Main loop for console-operator stuff
@@ -184,8 +185,8 @@ func watchHardware(ds DataService, ns NodeService) {
 	forceUpdateCnt := 0
 
 	// setup routine for pushing mountain keys
-	ch := make(chan nodeConsoleInfo, 100)
-	go doMountainCredsUpdates(ch)
+	mountainCredsUpdateChannel := make(chan nodeConsoleInfo, 100)
+	go doMountainCredsUpdates(mountainCredsUpdateChannel)
 
 	// loop forever looking for updates to the hardware
 	for {
@@ -194,7 +195,7 @@ func watchHardware(ds DataService, ns NodeService) {
 		//  do not perform the hardware update check
 		if !inShutdown {
 			// do the update
-			updateSucess := doHardwareUpdate(ds, ns, forceUpdateCnt == 0, ch)
+			updateSucessful := doHardwareUpdate(ds, ns, forceUpdateCnt == 0, mountainCredsUpdateChannel)
 
 			// set up for next update - normal countdown
 			forceUpdateCnt--
@@ -204,7 +205,7 @@ func watchHardware(ds DataService, ns NodeService) {
 			}
 
 			// look for failure - override complete update on failure
-			if !updateSucess {
+			if !updateSucessful {
 				forceUpdateCnt = 0
 			}
 		}

@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Changed
+- CASMCMS-8415 - Mountain key updates are now asynchronous
+- CASMCMS-8416 - Database updates include updating the node type
 
 - Added dependency injection to allow for unit testing
 - Added <https://pkg.go.dev/github.com/go-chi/chi/v5@v5.0.7> for routing. Lock at v5.0.7 due to golang version bump in v5.0.8
