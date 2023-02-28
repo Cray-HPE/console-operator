@@ -26,6 +26,7 @@ go 1.13
 
 require (
 	github.com/Azure/go-autorest/autorest v0.11.18 // indirect
+	github.com/go-chi/chi/v5 v5.0.7
 	github.com/googleapis/gnostic v0.3.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tidwall/gjson v1.9.3

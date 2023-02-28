@@ -34,13 +34,34 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/go-chi/chi/v5"
 )
 
 // Variable to hold address of console-data service
 var dataAddrBase string = "http://cray-console-data/v1"
 
+type DataService interface {
+	dataAddNodes(newNodes []nodeConsoleInfo) bool
+	dataRemoveNodes(removedNodes []nodeConsoleInfo)
+	checkHeartbeats()
+	doGetPodLocation(w http.ResponseWriter, r *http.Request)
+	doGetNodePod(w http.ResponseWriter, r *http.Request)
+	getNodePodForXname(xname string) (string, error)
+}
+
+// Implements DataService
+type DataManager struct {
+	k8Service K8Service
+}
+
+// Constructor injection for dependencies
+func NewDataManager(k8s K8Service) *DataManager {
+	return &DataManager{k8Service: k8s}
+}
+
 // function to interact with console-data api to add new nodes to the db
-func dataAddNodes(newNodes []nodeConsoleInfo) bool {
+func (DataManager) dataAddNodes(newNodes []nodeConsoleInfo) bool {
 	// return if there was a successful response from console-data
 	retVal := false
 
@@ -81,7 +102,7 @@ func dataAddNodes(newNodes []nodeConsoleInfo) bool {
 }
 
 // function to interact with console-data api to remove existing nodes from the db
-func dataRemoveNodes(removedNodes []nodeConsoleInfo) {
+func (DataManager) dataRemoveNodes(removedNodes []nodeConsoleInfo) {
 	// NOTE: data is just a simple array of nodeConsoleInfo structs - no packaging
 	data, err := json.Marshal(removedNodes)
 	if err != nil {
@@ -125,7 +146,7 @@ func dataRemoveNodes(removedNodes []nodeConsoleInfo) {
 }
 
 // trigger a clearing of nodes from a stale pod
-func checkHeartbeats() {
+func (DataManager) checkHeartbeats() {
 	for {
 		log.Printf("Checking for stale heartbeats")
 		// format the url for the clear API
@@ -153,13 +174,63 @@ type GetNodeData struct {
 	XName string `json:"xname"`
 }
 
+// doGetPodLocation response data
+type PodLocationDataResponse struct {
+	PodName string `json:"podname"`
+	Node    string `json:"node"`
+}
+
+func newPodLocationDataResponse(pod_name string, pLocation string) *PodLocationDataResponse {
+	pld := new(PodLocationDataResponse)
+	pld.PodName = pod_name
+	pld.Node = pLocation
+	return pld
+}
+
 // BaseResponse - error message for a bad response
 type BaseResponse struct {
 	Msg string `json:"message"`
 }
 
+// Finds and returns the node where the given pod is running within the k8s cluster.
+func (dm DataManager) doGetPodLocation(w http.ResponseWriter, r *http.Request) {
+	// only allow 'GET' calls
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", "GET")
+		sendJSONError(w, http.StatusMethodNotAllowed,
+			fmt.Sprintf("(%s) Not Allowed", r.Method))
+		return
+	}
+
+	// `/console-operator/v1/location/{podID}`
+	podID := chi.URLParam(r, "podID")
+	if podID == "" {
+		log.Printf("There was an error reading the podID from the request %s", r.URL.Path)
+		var body = BaseResponse{
+			Msg: fmt.Sprintf("There was an error reading the podID from the request %s", r.URL.Path),
+		}
+		SendResponseJSON(w, http.StatusBadRequest, body)
+		return
+	}
+
+	// Call k8s to find node
+	pLoc, err := dm.k8Service.getPodLocation(podID)
+	if err != nil {
+		log.Printf("There was an error retrieving pod location")
+		var body = BaseResponse{
+			Msg: fmt.Sprintf("There was an error retrieving pod location"),
+		}
+		SendResponseJSON(w, http.StatusInternalServerError, body)
+		return
+	}
+
+	// 200 ok
+	var pld *PodLocationDataResponse = newPodLocationDataResponse(podID, pLoc)
+	SendResponseJSON(w, http.StatusOK, pld)
+}
+
 // Get which pod a particular console is connected to
-func doGetNodePod(w http.ResponseWriter, r *http.Request) {
+func (dm DataManager) doGetNodePod(w http.ResponseWriter, r *http.Request) {
 	// NOTE: this is provided as a quick check of the internal status for
 	//  administrators to aid in determining the health of this service.
 
@@ -205,7 +276,7 @@ func doGetNodePod(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get the correct pod from the console-data service
-	podName, err := getNodePodForXname(inData.XName)
+	podName, err := dm.getNodePodForXname(inData.XName)
 	if err != nil {
 		log.Printf("Error getting console node pod from console-data: %s", err)
 		var body = BaseResponse{
@@ -223,7 +294,7 @@ func doGetNodePod(w http.ResponseWriter, r *http.Request) {
 }
 
 // query the console-data service for the correct pod
-func getNodePodForXname(xname string) (string, error) {
+func (DataManager) getNodePodForXname(xname string) (string, error) {
 	// now we have the name the user is looking for, put the request to console-data
 	url := fmt.Sprintf("%s/consolepod/%s", dataAddrBase, xname)
 	rd, _, err := getURL(url, nil)

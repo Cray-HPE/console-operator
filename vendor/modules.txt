@@ -17,6 +17,8 @@ github.com/Azure/go-autorest/tracing
 github.com/davecgh/go-spew/spew
 # github.com/form3tech-oss/jwt-go v3.2.2+incompatible
 github.com/form3tech-oss/jwt-go
+# github.com/go-chi/chi/v5 v5.0.7
+github.com/go-chi/chi/v5
 # github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys

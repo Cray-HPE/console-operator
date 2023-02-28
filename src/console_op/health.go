@@ -34,6 +34,29 @@ import (
 	"net/http"
 )
 
+type HealthService interface {
+	pinNumNodes(numAsk, numMin, numMax int) (int, bool)
+	getCurrentHealth() HealthResponse
+	doHealth(w http.ResponseWriter, r *http.Request)
+	doLiveness(w http.ResponseWriter, r *http.Request)
+	doReadiness(w http.ResponseWriter, r *http.Request)
+	doSetMaxNodesPerPod(w http.ResponseWriter, r *http.Request)
+	doInfo(w http.ResponseWriter, r *http.Request)
+	doClearData(w http.ResponseWriter, r *http.Request)
+	doSuspend(w http.ResponseWriter, r *http.Request)
+	doResume(w http.ResponseWriter, r *http.Request)
+}
+
+// Implements HealthService
+type HealthManager struct {
+	dataService DataService
+}
+
+// Constructor injection for dependencies
+func NewHealthManager(ds DataService) *HealthManager {
+	return &HealthManager{dataService: ds}
+}
+
 // HealthResponse - used to report service health stats
 type HealthResponse struct {
 	NumberConsoles       string `json:"consoles"`
@@ -49,7 +72,7 @@ type HealthResponse struct {
 }
 
 // Debugging information query
-func doHealth(w http.ResponseWriter, r *http.Request) {
+func (hm HealthManager) doHealth(w http.ResponseWriter, r *http.Request) {
 	// NOTE: this is provided as a quick check of the internal status for
 	//  administrators to aid in determining the health of this service.
 
@@ -62,7 +85,7 @@ func doHealth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get the current health status
-	stats := getCurrentHealth()
+	stats := hm.getCurrentHealth()
 
 	// log the query
 	log.Printf("Health check: %s", stats)
@@ -73,7 +96,7 @@ func doHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 // Fill out the current status of a HealthResponse object
-func getCurrentHealth() HealthResponse {
+func (HealthManager) getCurrentHealth() HealthResponse {
 	var stats HealthResponse
 	stats.HardwareUpdateSec = fmt.Sprintf("%d", newHardwareCheckPeriodSec)
 	stats.LastHardwareUpdate = hardwareUpdateTime
@@ -89,7 +112,7 @@ func getCurrentHealth() HealthResponse {
 }
 
 // Basic liveness probe
-func doLiveness(w http.ResponseWriter, r *http.Request) {
+func (HealthManager) doLiveness(w http.ResponseWriter, r *http.Request) {
 	// NOTE: this is coded in accordance with kubernetes best practices
 	//  for liveness/readiness checks.  This function should only be
 	//  used to indicate the server is still alive and processing requests.
@@ -108,7 +131,7 @@ func doLiveness(w http.ResponseWriter, r *http.Request) {
 }
 
 // Basic readiness probe
-func doReadiness(w http.ResponseWriter, r *http.Request) {
+func (HealthManager) doReadiness(w http.ResponseWriter, r *http.Request) {
 	// NOTE: this is coded in accordance with kubernetes best practices
 	//  for liveness/readiness checks.  This function should only be
 	//  used to indicate the server is still alive and processing requests.
@@ -140,7 +163,7 @@ type MaxNodeData struct {
 }
 
 // small helper function to ensure correct number of nodes asked for
-func pinNumNodes(numAsk, numMin, numMax int) (int, bool) {
+func (HealthManager) pinNumNodes(numAsk, numMin, numMax int) (int, bool) {
 	// ensure the input number ends in range [0,numMax]
 	ok := true
 	val := numAsk
@@ -157,7 +180,7 @@ func pinNumNodes(numAsk, numMin, numMax int) (int, bool) {
 }
 
 // Debugging information probe
-func doSetMaxNodesPerPod(w http.ResponseWriter, r *http.Request) {
+func (hm HealthManager) doSetMaxNodesPerPod(w http.ResponseWriter, r *http.Request) {
 	// API to set the max number of nodes per pod
 	log.Printf("Call to setMaxNodesPerPod...")
 
@@ -205,12 +228,12 @@ func doSetMaxNodesPerPod(w http.ResponseWriter, r *http.Request) {
 	// process the results - do a sanity check on the user input
 	log.Printf("Resetting max nodes based on user input: maxMtn: %d, maxRvr: %d", inData.MaxMtnNodes, inData.MaxRvrNodes)
 	ok := true
-	maxMtnNodesPerPod, ok = pinNumNodes(inData.MaxMtnNodes, 2, 750)
+	maxMtnNodesPerPod, ok = hm.pinNumNodes(inData.MaxMtnNodes, 2, 750)
 	if !ok {
 		log.Printf("Error - invalid max mountain nodes per pod. Asked: %d, defaulted to: %d",
 			inData.MaxMtnNodes, maxMtnNodesPerPod)
 	}
-	maxRvrNodesPerPod, ok = pinNumNodes(inData.MaxRvrNodes, 2, 2000)
+	maxRvrNodesPerPod, ok = hm.pinNumNodes(inData.MaxRvrNodes, 2, 2000)
 	if !ok {
 		log.Printf("Error - invalid max river nodes per pod. Asked: %d, defaulted to: %d",
 			inData.MaxRvrNodes, maxRvrNodesPerPod)
@@ -234,7 +257,7 @@ type InfoResponse struct {
 }
 
 // Debugging information probe
-func doInfo(w http.ResponseWriter, r *http.Request) {
+func (hm HealthManager) doInfo(w http.ResponseWriter, r *http.Request) {
 	// NOTE: this is provided as a quick check of the internal status for
 	//  administrators to aid in determining the health of this service.
 
@@ -248,12 +271,12 @@ func doInfo(w http.ResponseWriter, r *http.Request) {
 
 	// fill in health response portion
 	var info InfoResponse
-	info.Health = getCurrentHealth()
+	info.Health = hm.getCurrentHealth()
 
 	// keep track of how many nodes are connected to each node-pod
 	tally := make(map[string]int)
 	for nn := range nodeCache {
-		podName, err := getNodePodForXname(nn)
+		podName, err := hm.dataService.getNodePodForXname(nn)
 		if err != nil {
 			tally["Unassigned"] = tally["Unassigned"] + 1
 		} else {
@@ -272,7 +295,7 @@ func doInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 // Debugging only - clear all current data from services
-func doClearData(w http.ResponseWriter, r *http.Request) {
+func (hm HealthManager) doClearData(w http.ResponseWriter, r *http.Request) {
 	// This will force a clear of all cached data here as well as removing all
 	// node information from console-data.  That will trigger all console-nodes
 	// to drop the consoles they are watching on the next heartbeat call.  All
@@ -293,7 +316,7 @@ func doClearData(w http.ResponseWriter, r *http.Request) {
 		rn = append(rn, ni)
 	}
 	nodeCache = make(map[string]nodeConsoleInfo)
-	dataRemoveNodes(rn)
+	hm.dataService.dataRemoveNodes(rn)
 
 	// write the response
 	w.WriteHeader(http.StatusOK)
@@ -301,7 +324,7 @@ func doClearData(w http.ResponseWriter, r *http.Request) {
 }
 
 // Debugging only - suspend querying the state manager
-func doSuspend(w http.ResponseWriter, r *http.Request) {
+func (HealthManager) doSuspend(w http.ResponseWriter, r *http.Request) {
 	// only allow 'POST' calls
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", "POST")
@@ -320,7 +343,7 @@ func doSuspend(w http.ResponseWriter, r *http.Request) {
 }
 
 // Debugging only - resume querying the state manager
-func doResume(w http.ResponseWriter, r *http.Request) {
+func (HealthManager) doResume(w http.ResponseWriter, r *http.Request) {
 	// only allow 'POST' calls
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", "POST")

@@ -48,26 +48,39 @@ var k8sClientset *kubernetes.Clientset = nil
 // a shared file system so console-node pods can read what is set here
 const targetNodeFile string = "/var/log/console/TargetNodes.txt"
 
-// Function to initialize k8s cluster access
-func initK8s() {
+type K8Service interface {
+	printK8sInfo()
+	updateReplicaCount(newReplicaCnt int)
+	updateNodesPerPod(newNumMtn, newNumRvr int)
+	getPodLocation(podID string) (loc string, err error)
+}
+
+// Implements K8Service
+type K8Manager struct {
+	k8sConfig    *rest.Config
+	k8sClientset *kubernetes.Clientset
+}
+
+func NewK8Manager() (*K8Manager, error) {
 	// creates the in-cluster config
 	var err error
 	k8sConfig, err = rest.InClusterConfig()
 	if err != nil {
 		log.Printf("InClusterConfig error: %s", err.Error())
-		return
+		return nil, err
 	}
-
 	// creates the clientset
 	k8sClientset, err = kubernetes.NewForConfig(k8sConfig)
 	if err != nil {
 		log.Printf("NewForConfig error: %s", err.Error())
-		return
+		return nil, err
 	}
+
+	return &K8Manager{k8sConfig: k8sConfig, k8sClientset: k8sClientset}, nil
 }
 
 // Function to print information from the k8s cluster
-func printK8sInfo() {
+func (K8Manager) printK8sInfo() {
 	// NOTE: not needed for production, but nice debug code to keep around
 
 	// make sure k8s is initialized
@@ -107,7 +120,7 @@ func printK8sInfo() {
 }
 
 // Function to update the number of console-node replicas
-func updateReplicaCount(newReplicaCnt int) {
+func (K8Manager) updateReplicaCount(newReplicaCnt int) {
 	// This function interacts with k8s to check the current number of replicas
 	// in the console-node statefulset.  It will change the replica count to
 	// match what it should be creating new pods or destroying current ones.
@@ -159,7 +172,7 @@ func updateReplicaCount(newReplicaCnt int) {
 var numFileErrors = 0
 
 // Update the number of consoles per node pod
-func updateNodesPerPod(newNumMtn, newNumRvr int) {
+func (K8Manager) updateNodesPerPod(newNumMtn, newNumRvr int) {
 	// NOTE: for the time being we will just put this information
 	//  into a simple text file on a pvc shared with console-operator
 	//  and console-node pods.  The console-operator will write changes
@@ -215,4 +228,17 @@ func updateNodesPerPod(newNumMtn, newNumRvr int) {
 	// trigger a retry if something goes wrong
 	numMtnNodesPerPod = newNumMtn
 	numRvrNodesPerPod = newNumRvr
+}
+
+// Find and return where the current pod is running in k8s
+func (K8Manager) getPodLocation(podID string) (loc string, err error) {
+	pod, err := k8sClientset.CoreV1().Pods("services").Get(podID, metav1.GetOptions{})
+	if err != nil {
+		log.Printf("Error: Unable to find the node for pod %s, %s", podID, err)
+		return "", err
+	}
+
+	loc = pod.Spec.NodeName
+	fmt.Printf("node name: %s", loc)
+	return loc, err
 }
