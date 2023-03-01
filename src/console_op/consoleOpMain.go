@@ -284,7 +284,7 @@ func main() {
 	// construct dependency injection
 	k8Manager, err := NewK8Manager()
 	if err != nil {
-		log.Printf("ERROR: k8Manager failed to initialize")
+		log.Panicf("ERROR: k8Manager failed to initialize")
 	}
 	nodeManager := NewNodeManager(k8Manager)
 	dataManager := NewDataManager(k8Manager)
