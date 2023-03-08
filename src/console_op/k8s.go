@@ -237,6 +237,5 @@ func (k8s K8Manager) getPodLocationAlias(podID string) (loc string, err error) {
 	}
 
 	loc = pod.Spec.NodeName
-	fmt.Printf("node name: %s", loc)
 	return loc, err
 }
