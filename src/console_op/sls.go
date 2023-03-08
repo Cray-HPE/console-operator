@@ -38,7 +38,7 @@ type SlsManager struct {
 }
 
 func NewSlsManager() SlsService {
-	return &SlsManager{baseUrl: "http://cray-sls/"}
+	return &SlsManager{baseUrl: "http://cray-sls/v1"}
 }
 
 // https://github.com/Cray-HPE/hms-sls/blob/87f0f0aee95ad5ae1a36b99b787b266bc044fc47/pkg/sls-common/types.go#L46
