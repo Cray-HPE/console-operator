@@ -110,9 +110,10 @@ func TestGetXnameAliases(t *testing.T) {
 
 	// override constructor
 	slsManager := SlsManager{baseUrl: server.URL}
-	expLen := 4
+	expLen := 2 //total of 4 structs, 2 valid
 	xnameAlias, _ := slsManager.getXnameAlias()
-	if len(xnameAlias) == 0 {
-		t.Errorf("Expected %d xnameAlias structs, got empty response", expLen)
+	actualLen := len(xnameAlias)
+	if actualLen != expLen {
+		t.Errorf("Expected %d xnameAlias structs, got %d instead", expLen, actualLen)
 	}
 }
