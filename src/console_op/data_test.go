@@ -39,8 +39,18 @@ type K8GetPodLocationMock struct {
 	K8Manager
 }
 
-func (K8GetPodLocationMock) getPodLocation(podID string) (loc string, err error) {
+func (K8GetPodLocationMock) getPodLocationAlias(podID string) (loc string, err error) {
 	return "node-foo", nil
+}
+
+type SlsGetXnameAliasesMock struct {
+	SlsManager
+}
+
+func (SlsGetXnameAliasesMock) getXnameAlias() (xnameNodeAlias []XnameNodeAlias, err error) {
+	mock := []XnameNodeAlias{}
+	mock = append(mock, XnameNodeAlias{xname: "x3000c0s17b1", alias: "node-foo"})
+	return mock, nil
 }
 
 func TestDoGetPodLocation(t *testing.T) {
@@ -50,13 +60,14 @@ func TestDoGetPodLocation(t *testing.T) {
 	rctx.URLParams.Add("podID", "pod-1234")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
-	dm := NewDataManager(K8GetPodLocationMock{})
+	dm := NewDataManager(K8GetPodLocationMock{}, SlsGetXnameAliasesMock{})
 	handler := http.HandlerFunc(dm.doGetPodLocation)
 	handler.ServeHTTP(rr, req)
 
 	// Expected results
-	eNode := "node-foo"
+	eAlias := "node-foo"
 	eName := "pod-1234"
+	eXname := "x3000c0s17b1"
 
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("Handler returned incorrect status code. Expected: %d Got: %d", http.StatusOK, status)
@@ -67,10 +78,13 @@ func TestDoGetPodLocation(t *testing.T) {
 		t.Errorf("Error decoding response body: %v", err)
 	}
 
-	if resp.Node != eNode {
-		t.Errorf("Expected: %s. Got: %s.", eNode, resp.Node)
+	if resp.Alias != eAlias {
+		t.Errorf("Expected: %s. Got: %s.", eAlias, resp.Alias)
 	}
 	if resp.PodName != eName {
 		t.Errorf("Expected: %s. Got: %s.", eName, resp.PodName)
+	}
+	if resp.Xname != eXname {
+		t.Errorf("Expected: %s. Got: %s.", eXname, resp.Xname)
 	}
 }

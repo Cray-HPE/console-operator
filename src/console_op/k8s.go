@@ -40,10 +40,6 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// global vars for k8s access
-var k8sConfig *rest.Config = nil
-var k8sClientset *kubernetes.Clientset = nil
-
 // File to hold target number of node information - it will reside on
 // a shared file system so console-node pods can read what is set here
 const targetNodeFile string = "/var/log/console/TargetNodes.txt"
@@ -52,46 +48,48 @@ type K8Service interface {
 	printK8sInfo()
 	updateReplicaCount(newReplicaCnt int)
 	updateNodesPerPod(newNumMtn, newNumRvr int)
-	getPodLocation(podID string) (loc string, err error)
+	getPodLocationAlias(podID string) (loc string, err error)
 }
 
 // Implements K8Service
 type K8Manager struct {
-	k8sConfig    *rest.Config
-	k8sClientset *kubernetes.Clientset
+	config    *rest.Config
+	clientset *kubernetes.Clientset
 }
 
-func NewK8Manager() (*K8Manager, error) {
+func NewK8Manager() (K8Service, error) {
 	// creates the in-cluster config
 	var err error
-	k8sConfig, err = rest.InClusterConfig()
+	var config *rest.Config = nil
+	var clientset *kubernetes.Clientset = nil
+	config, err = rest.InClusterConfig()
 	if err != nil {
 		log.Printf("InClusterConfig error: %s", err.Error())
 		return nil, err
 	}
 	// creates the clientset
-	k8sClientset, err = kubernetes.NewForConfig(k8sConfig)
+	clientset, err = kubernetes.NewForConfig(config)
 	if err != nil {
 		log.Printf("NewForConfig error: %s", err.Error())
 		return nil, err
 	}
 
-	return &K8Manager{k8sConfig: k8sConfig, k8sClientset: k8sClientset}, nil
+	return &K8Manager{config: config, clientset: clientset}, nil
 }
 
 // Function to print information from the k8s cluster
-func (K8Manager) printK8sInfo() {
+func (k8s K8Manager) printK8sInfo() {
 	// NOTE: not needed for production, but nice debug code to keep around
 
 	// make sure k8s is initialized
-	if k8sClientset == nil || k8sConfig == nil {
+	if k8s.clientset == nil || k8s.config == nil {
 		log.Printf("ERROR: k8s not initialized correctly")
 		return
 	}
 
 	// Or specify namespace to get pods in particular namespace
 	log.Printf("Getting Pods in namespace...")
-	pods, err := k8sClientset.CoreV1().Pods("services").List(metav1.ListOptions{})
+	pods, err := k8s.clientset.CoreV1().Pods("services").List(metav1.ListOptions{})
 	if err != nil {
 		log.Printf("PodsList error: %s", err.Error())
 	}
@@ -106,7 +104,7 @@ func (K8Manager) printK8sInfo() {
 	// - Use helper functions e.g. errors.IsNotFound()
 	// - And/or cast to StatusError and use its properties like e.g. ErrStatus.Message
 	log.Printf("Getting cray-console-node pods...")
-	_, err = k8sClientset.CoreV1().Pods("services").Get("cray-console-node", metav1.GetOptions{})
+	_, err = k8s.clientset.CoreV1().Pods("services").Get("cray-console-node", metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		log.Printf("Pod cray-console-node not found in services namespace\n")
 	} else if statusError, isStatus := err.(*errors.StatusError); isStatus {
@@ -120,19 +118,19 @@ func (K8Manager) printK8sInfo() {
 }
 
 // Function to update the number of console-node replicas
-func (K8Manager) updateReplicaCount(newReplicaCnt int) {
+func (k8s K8Manager) updateReplicaCount(newReplicaCnt int) {
 	// This function interacts with k8s to check the current number of replicas
 	// in the console-node statefulset.  It will change the replica count to
 	// match what it should be creating new pods or destroying current ones.
 
 	// ensure that k8s was initialized correctly
-	if k8sClientset == nil || k8sConfig == nil {
+	if k8s.clientset == nil || k8s.config == nil {
 		log.Printf("ERROR: k8s not initialized correctly")
 		return
 	}
 
 	// get the stateful set
-	dep, err := k8sClientset.AppsV1().StatefulSets("services").Get("cray-console-node", metav1.GetOptions{})
+	dep, err := k8s.clientset.AppsV1().StatefulSets("services").Get("cray-console-node", metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		log.Printf("StatefulSet cray-console-node not found in services namespace\n")
 		return
@@ -152,7 +150,7 @@ func (K8Manager) updateReplicaCount(newReplicaCnt int) {
 	if int32(newReplicaCnt) != currReplicas {
 		// update deployment to the desired number
 		*dep.Spec.Replicas = int32(newReplicaCnt)
-		newDep, err := k8sClientset.AppsV1().StatefulSets("services").Update(dep)
+		newDep, err := k8s.clientset.AppsV1().StatefulSets("services").Update(dep)
 		if err != nil {
 			// NOTE - do not reset numNodePods if this failed, that should trigger
 			//  a retry the next time it checks
@@ -231,8 +229,8 @@ func (K8Manager) updateNodesPerPod(newNumMtn, newNumRvr int) {
 }
 
 // Find and return where the current pod is running in k8s
-func (K8Manager) getPodLocation(podID string) (loc string, err error) {
-	pod, err := k8sClientset.CoreV1().Pods("services").Get(podID, metav1.GetOptions{})
+func (k8s K8Manager) getPodLocationAlias(podID string) (loc string, err error) {
+	pod, err := k8s.clientset.CoreV1().Pods("services").Get(podID, metav1.GetOptions{})
 	if err != nil {
 		log.Printf("Error: Unable to find the node for pod %s, %s", podID, err)
 		return "", err

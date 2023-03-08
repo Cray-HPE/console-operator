@@ -47,7 +47,7 @@ type NodeManager struct {
 }
 
 // Inject dependencies
-func NewNodeManager(k8Service K8Service) *NodeManager {
+func NewNodeManager(k8Service K8Service) NodeService {
 	return &NodeManager{k8Service: k8Service}
 }
 

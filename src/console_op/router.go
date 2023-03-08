@@ -36,21 +36,19 @@ import (
 
 var router = chi.NewRouter()
 
-func setupRoutes(ds DataService, hs HealthService) {
+func setupRoutes(ds DataService, hs HealthService, dbs DebugService) {
 	// k8s routes
 	router.Get("/console-operator/liveness", hs.doLiveness)
 	router.Get("/console-operator/readiness", hs.doReadiness)
+	router.Get("/console-operator/health", hs.doHealth)
 
 	// debug only routes
-	router.Get("/console-operator/health", hs.doHealth)
-	router.Get("/console-operator/info", hs.doInfo)
-	router.Delete("/console-operator/clearData", hs.doClearData)
-	router.Post("/console-operator/suspend", hs.doSuspend)
-	router.Post("/console-operator/resume", hs.doResume)
-
-	// v0
+	router.Get("/console-operator/info", dbs.doInfo)
+	router.Delete("/console-operator/clearData", dbs.doClearData)
+	router.Post("/console-operator/suspend", dbs.doSuspend)
+	router.Post("/console-operator/resume", dbs.doResume)
+	router.Patch("/console-operator/v0/setMaxNodesPerPod", dbs.doSetMaxNodesPerPod)
 	router.Get("/console-operator/v0/getNodePod", ds.doGetNodePod)
-	router.Patch("/console-operator/v0/setMaxNodesPerPod", hs.doSetMaxNodesPerPod)
 
 	// v1
 	router.Get("/console-operator/v1/location/{podID}", ds.doGetPodLocation)

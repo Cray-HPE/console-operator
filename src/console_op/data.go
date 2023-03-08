@@ -52,12 +52,13 @@ type DataService interface {
 
 // Implements DataService
 type DataManager struct {
-	k8Service K8Service
+	k8Service  K8Service
+	slsService SlsService
 }
 
 // Constructor injection for dependencies
-func NewDataManager(k8s K8Service) *DataManager {
-	return &DataManager{k8Service: k8s}
+func NewDataManager(k8s K8Service, sls SlsService) DataService {
+	return &DataManager{k8Service: k8s, slsService: sls}
 }
 
 // function to interact with console-data api to add new nodes to the db
@@ -177,13 +178,15 @@ type GetNodeData struct {
 // doGetPodLocation response data
 type PodLocationDataResponse struct {
 	PodName string `json:"podname"`
-	Node    string `json:"node"`
+	Alias   string `json:"alias"`
+	Xname   string `json:"xname"`
 }
 
-func newPodLocationDataResponse(pod_name string, pLocation string) *PodLocationDataResponse {
+func newPodLocationDataResponse(podName string, alias string, xname string) *PodLocationDataResponse {
 	pld := new(PodLocationDataResponse)
-	pld.PodName = pod_name
-	pld.Node = pLocation
+	pld.PodName = podName
+	pld.Alias = alias
+	pld.Xname = xname
 	return pld
 }
 
@@ -213,19 +216,46 @@ func (dm DataManager) doGetPodLocation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Call k8s to find node
-	pLoc, err := dm.k8Service.getPodLocation(podID)
+	// Call k8s to find node alias
+	alias, err := dm.k8Service.getPodLocationAlias(podID)
 	if err != nil {
-		log.Printf("There was an error retrieving pod location")
+		log.Printf("There was an error retrieving pod location from kubernetes")
 		var body = BaseResponse{
-			Msg: fmt.Sprintf("There was an error retrieving pod location"),
+			Msg: fmt.Sprintf("There was an error retrieving pod location %s", err),
+		}
+		SendResponseJSON(w, http.StatusInternalServerError, body)
+		return
+	}
+
+	// Call sls to find xnames and alias mapping
+	xnameAliases, err := dm.slsService.getXnameAlias()
+	if err != nil {
+		log.Printf("There was an error getting the xnames from cray-sls\n")
+		var body = BaseResponse{
+			Msg: fmt.Sprintf("There was an error getting the xnames from cray-sls %s", err),
+		}
+		SendResponseJSON(w, http.StatusInternalServerError, body)
+		return
+	}
+
+	// Find the xname for the node alias
+	xname := ""
+	for _, xna := range xnameAliases {
+		if xna.alias == alias {
+			xname = xna.xname
+		}
+	}
+	if xname == "" {
+		log.Printf("Could not find a mapping of node alias name to xname\n")
+		var body = BaseResponse{
+			Msg: fmt.Sprintf("There was an error getting the xnames from cray-sls %s", err),
 		}
 		SendResponseJSON(w, http.StatusInternalServerError, body)
 		return
 	}
 
 	// 200 ok
-	var pld *PodLocationDataResponse = newPodLocationDataResponse(podID, pLoc)
+	var pld *PodLocationDataResponse = newPodLocationDataResponse(podID, alias, xname)
 	SendResponseJSON(w, http.StatusOK, pld)
 }
 

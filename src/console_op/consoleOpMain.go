@@ -286,9 +286,11 @@ func main() {
 	if err != nil {
 		log.Panicf("ERROR: k8Manager failed to initialize")
 	}
+	slsManager := NewSlsManager()
 	nodeManager := NewNodeManager(k8Manager)
-	dataManager := NewDataManager(k8Manager)
+	dataManager := NewDataManager(k8Manager, slsManager)
 	healthManager := NewHealthManager(dataManager)
+	debugManager := NewDebugManager(dataManager, healthManager)
 
 	// Set up the zombie killer
 	go watchForZombies()
@@ -306,7 +308,7 @@ func main() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 
-	setupRoutes(dataManager, healthManager)
+	setupRoutes(dataManager, healthManager, debugManager)
 
 	// spin the server in a separate thread so main can wait on an os
 	// signal to cleanly shut down
