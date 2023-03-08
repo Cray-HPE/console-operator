@@ -76,7 +76,7 @@ var heartbeatCheckPeriodSec int = 15
 var inShutdown bool = false
 
 // Function to do a hardware update check
-func doHardwareUpdate(updateAll, redeployMtnKeys bool) (updateSuccess, keySuccess bool) {
+func doHardwareUpdate(ds DataService, ns NodeService, updateAll, redeployMtnKeys bool) (updateSuccess, keySuccess bool) {
 	// return if the console-data update succeeded
 	updateSuccess = true
 	keySuccess = true
@@ -85,7 +85,7 @@ func doHardwareUpdate(updateAll, redeployMtnKeys bool) (updateSuccess, keySucces
 	hardwareUpdateTime = time.Now().Format(time.RFC3339)
 
 	// get the current endpoints from hsm
-	currNodes := getCurrentNodesFromHSM()
+	currNodes := ns.getCurrentNodesFromHSM()
 
 	// look for new nodes
 	var newNodes []nodeConsoleInfo = nil
@@ -163,7 +163,7 @@ func doHardwareUpdate(updateAll, redeployMtnKeys bool) (updateSuccess, keySucces
 
 	// add the new nodes to console-data
 	if len(newNodes) > 0 {
-		if ok := dataAddNodes(newNodes); !ok {
+		if ok := ds.dataAddNodes(newNodes); !ok {
 			log.Printf("New data send to console-data failed")
 			updateSuccess = false
 		}
@@ -173,7 +173,7 @@ func doHardwareUpdate(updateAll, redeployMtnKeys bool) (updateSuccess, keySucces
 
 	// remove the nodes from console-data
 	if len(removedNodes) > 0 {
-		dataRemoveNodes(removedNodes)
+		ds.dataRemoveNodes(removedNodes)
 	} else {
 		log.Printf("No nodes being removed")
 	}
@@ -181,7 +181,7 @@ func doHardwareUpdate(updateAll, redeployMtnKeys bool) (updateSuccess, keySucces
 	// recalculate the number pods needed and how many assigned to each pod
 	// NOTE: do this every time in case something else made changes on the system
 	//  like number of console-node replicas deployed
-	updateNodeCounts(numMtnNodes, numRvrNodes)
+	ns.updateNodeCounts(numMtnNodes, numRvrNodes)
 
 	// make sure the console ssh key has been deployed on all new mountain nodes
 	// NOTE: do this last so console-node pods can start to spin up and acquire
@@ -198,7 +198,7 @@ func doHardwareUpdate(updateAll, redeployMtnKeys bool) (updateSuccess, keySucces
 }
 
 // Main loop for console-operator stuff
-func watchHardware() {
+func watchHardware(ds DataService, ns NodeService) {
 	// every once in a while send all inventory to update to make sure console-data
 	// is actually up to date
 	forceUpdateCnt := 0
@@ -213,7 +213,7 @@ func watchHardware() {
 		//  do not perform the hardware update check
 		if !inShutdown {
 			// do the update
-			updateSucess, keySuccess := doHardwareUpdate(forceUpdateCnt == 0, updateMtnKey)
+			updateSucess, keySuccess := doHardwareUpdate(ds, ns, forceUpdateCnt == 0, updateMtnKey)
 
 			// set up for next update - normal countdown
 			forceUpdateCnt--
@@ -281,17 +281,25 @@ func main() {
 		log.Print("Running in DEBUG-ONLY mode.")
 	}
 
+	// construct dependency injection
+	k8Manager, err := NewK8Manager()
+	if err != nil {
+		log.Panicf("ERROR: k8Manager failed to initialize")
+	}
+	slsManager := NewSlsManager()
+	nodeManager := NewNodeManager(k8Manager)
+	dataManager := NewDataManager(k8Manager, slsManager)
+	healthManager := NewHealthManager(dataManager)
+	debugManager := NewDebugManager(dataManager, healthManager)
+
 	// Set up the zombie killer
 	go watchForZombies()
 
-	// initialize the connection with k8s client
-	initK8s()
-
 	// loop over new hardware
-	go watchHardware()
+	go watchHardware(dataManager, nodeManager)
 
 	// spin a thread to check for stale heartbeat information
-	go checkHeartbeats()
+	go dataManager.checkHeartbeats()
 
 	// set up a channel to wait for the os to tell us to stop
 	// NOTE - must be set up before initializing anything that needs
@@ -300,27 +308,14 @@ func main() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 
-	// register handlers for http requests
-	// NOTE: just doing it here for now, when it gets more complex break this
-	//  into a separate function
-	// NOTE: adding liveness and readiness under a non-versioned api since
-	//  these endpoints will not be changing
-	http.HandleFunc("/console-operator/liveness", doLiveness)
-	http.HandleFunc("/console-operator/readiness", doReadiness)
-	http.HandleFunc("/console-operator/health", doHealth)
-	http.HandleFunc("/console-operator/info", doInfo)
-	http.HandleFunc("/console-operator/clearData", doClearData)
-	http.HandleFunc("/console-operator/suspend", doSuspend)
-	http.HandleFunc("/console-operator/resume", doResume)
-	http.HandleFunc("/console-operator/v0/getNodePod", doGetNodePod)
-	http.HandleFunc("/console-operator/v0/setMaxNodesPerPod", doSetMaxNodesPerPod)
+	setupRoutes(dataManager, healthManager, debugManager)
 
 	// spin the server in a separate thread so main can wait on an os
 	// signal to cleanly shut down
 	log.Printf("Spinning up http server...")
 	httpSrv := http.Server{
 		Addr:    httpListen,
-		Handler: http.DefaultServeMux,
+		Handler: router,
 	}
 	go func() {
 		// NOTE: do not use log.Fatal as that will immediately exit
