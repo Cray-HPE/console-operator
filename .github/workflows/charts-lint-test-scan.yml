@@ -23,19 +23,27 @@
 #
 name: Lint, test, and scan Helm charts
 on:
-  pull_request:
-    branches:
-      - master
-      - release/**
-  schedule:
-    - cron: "0 0 * * *"
+  # pull_request:
+  #   branches:
+  #     - master
+  #     - release/**
+  # schedule:
+  #   - cron: "0 0 * * *"
+  push:
   workflow_dispatch:
 jobs:
   lint-test-scan:
-    uses: Cray-HPE/.github/.github/workflows/charts-lint-test-scan.yml@main
+    uses: Cray-HPE/.github/.github/workflows/charts-lint-test-scan.yml@feature/helm-auth
     with:
-      lint-charts: ${{ github.event_name == 'pull_request' }}
-      scan-images: false
-      scan-charts: false
+      # lint-charts: ${{ github.event_name == 'pull_request' }}
+      # scan-images: false
+      # scan-charts: false
+      lint-charts: true
+      test-charts: false
+      scan-charts: true
+      scan-images: true
     secrets:
       snyk-token: ${{ secrets.SNYK_TOKEN }}
+      github-token: ${{ secrets.GITHUB_TOKEN }}
+      artifactory-username: ${{ secrets.ARTIFACTORY_ALGOL60_READONLY_USERNAME }}
+      artifactory-password: ${{ secrets.ARTIFACTORY_ALGOL60_READONLY_TOKEN }}
