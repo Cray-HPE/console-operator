@@ -1,7 +1,7 @@
 //
 //  MIT License
 //
-//  (C) Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+//  (C) Copyright 2020-2023 Hewlett Packard Enterprise Development LP
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -34,6 +34,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/tidwall/gjson"
 )
@@ -293,22 +294,12 @@ func generateMountainConsoleCredentials() error {
 	return nil
 }
 
-// Ensure that Mountain node console credentials are properly deployed.
-func ensureMountainConsoleKeysDeployed(nodes []nodeConsoleInfo) bool {
-	// Ensure that we have a console ssh key pair.  If the key pair
-	// is not on the local file system then obtain it from Vault.  If
-	// Vault is not available or we are otherwise unable to obtain the key
-	// pair then generate it and log a message.  We want to minimize any
-	// loss of console logs or console access due to a missing ssh
-	// key pair.
-
-	// return if this succeeded
-	retVal := true
-
+// Ensure that Mountain node console credentials have been generated.
+func ensureMountainConsoleKeysExist() bool {
 	// if running in debug mode there won't be any nodes or vault present
 	if debugOnly {
 		log.Print("Running in debug mode - skipping mountain cred generation")
-		return retVal
+		return true
 	}
 
 	// Check that we have key pair files on local storage
@@ -326,12 +317,80 @@ func ensureMountainConsoleKeysDeployed(nodes []nodeConsoleInfo) bool {
 			}
 		}
 	}
+	return true
+}
+
+// Watches the mountainCredsUpdateChannel for new nodes to update
+func doMountainCredsUpdates(mountainCredsUpdateChannel chan nodeConsoleInfo) {
+	nodesToUpdate := make(map[string]nodeConsoleInfo)
+	for {
+		select {
+		case node := <-mountainCredsUpdateChannel:
+			nodesToUpdate[node.NodeName] = node
+		case <-time.After(time.Second):
+			// If no new nodes come in for 1 second, send the current batch
+			updateCount := len(nodesToUpdate)
+			if updateCount > 0 {
+				log.Printf("Updating mountain keys for %d nodes", updateCount)
+				nodesToUpdate = doMountainCredsUpdate(nodesToUpdate)
+				remainingCount := len(nodesToUpdate)
+				if remainingCount > 0 {
+					log.Printf("%d out of %d key updates failed and will be retried", remainingCount, updateCount)
+					// Sleep for 1 minute so we don't flood the system/logs with retries
+					time.Sleep(60 * time.Second)
+				} else {
+					log.Printf("All key updates succeeded")
+				}
+			}
+		}
+	}
+}
+
+// Takes a list of mountain nodes to update and returns a list of nodes that failed and need to be retried
+func doMountainCredsUpdate(nodesToUpdate map[string]nodeConsoleInfo) (remaining map[string]nodeConsoleInfo) {
+	nodeList := make([]nodeConsoleInfo, len(nodesToUpdate))
+	bmcMap := make(map[string][]string)
+	for nodeKey, node := range nodesToUpdate {
+		nodeList = append(nodeList, node)
+		bmcMap[node.BmcName] = append(bmcMap[node.BmcName], nodeKey)
+	}
+	success, reply := deployMountainConsoleKeys(nodeList)
+	if !success {
+		return nodesToUpdate
+	}
+	for _, t := range reply.Targets {
+		if t.StatusCode == 204 {
+			// BMC update was successful and all associated nodes can be removed from the update list
+			for _, xname := range bmcMap[t.Xname] {
+				delete(nodesToUpdate, xname)
+			}
+		}
+	}
+	log.Printf("remaining: %d", len(nodesToUpdate))
+	return nodesToUpdate
+}
+
+// Deploy mountain node console credentials.
+func deployMountainConsoleKeys(nodes []nodeConsoleInfo) (bool, scsdList) {
+	// Ensure that we have a console ssh key pair.  If the key pair
+	// is not on the local file system then obtain it from Vault.  If
+	// Vault is not available or we are otherwise unable to obtain the key
+	// pair then generate it and log a message.  We want to minimize any
+	// loss of console logs or console access due to a missing ssh
+	// key pair.
+	scsdReply := scsdList{}
+
+	// if running in debug mode there won't be any nodes or vault present
+	if debugOnly {
+		log.Print("Running in debug mode - skipping mountain cred generation")
+		return true, scsdReply
+	}
 
 	// Read in the public key.
 	pubKey, err := ioutil.ReadFile(mountainConsoleKeyPub)
 	if err != nil {
 		log.Printf("Unable to read the public key file: %s", err)
-		return false
+		return false, scsdReply
 	}
 
 	// Obtain the list of Mountain bmcs from the node list.
@@ -367,14 +426,14 @@ func ensureMountainConsoleKeysDeployed(nodes []nodeConsoleInfo) bool {
 	data, rc, err := postURL(URL, jsonScsdParam, nil)
 
 	// consider any http return code < 400 as success
-	retVal = rc < 300
+	success := rc < 300
 
 	// parse the return data
-	scsdReply := scsdList{}
+
 	err = json.Unmarshal(data, &scsdReply)
 	if err != nil {
 		log.Printf("Error unmarshalling the reply from scsd: %s", err)
-		return retVal
+		return success, scsdReply
 	}
 	for _, t := range scsdReply.Targets {
 		if t.StatusCode != 204 {
@@ -396,5 +455,5 @@ func ensureMountainConsoleKeysDeployed(nodes []nodeConsoleInfo) bool {
 	// BMC and public key basis.  This could be used in the future to reduce the time
 	// to redeploy all keys.
 
-	return retVal
+	return success, scsdReply
 }
