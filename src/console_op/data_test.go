@@ -88,3 +88,37 @@ func TestDoGetPodLocation(t *testing.T) {
 		t.Errorf("Expected: %s. Got: %s.", eXname, resp.Xname)
 	}
 }
+
+type K8GetReplicaCountMock struct {
+	// embed this so only mock methods as needed
+	K8Manager
+}
+
+func (K8GetReplicaCountMock) getReplicaCount() (repCount int, err error) {
+	return 3, nil
+}
+
+func TestDoGetPodReplicaCount(t *testing.T) {
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/console-operator/v1/replicas", nil)
+
+	// Expected results
+	eReplicas := 3
+
+	dm := NewDataManager(K8GetReplicaCountMock{}, SlsGetXnameAliasesMock{})
+	handler := http.HandlerFunc(dm.doGetPodReplicaCount)
+	handler.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("Handler returned incorrect status code. Expected: %d Got: %d", http.StatusOK, status)
+	}
+
+	var resp GetNodeReplicasResponse
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Errorf("Error decoding response body: %v", err)
+	}
+
+	if resp.Replicas != eReplicas {
+		t.Errorf("Expected: %d. Got: %d.", eReplicas, resp.Replicas)
+	}
+}
