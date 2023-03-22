@@ -1,7 +1,7 @@
 //
 //  MIT License
 //
-//  (C) Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+//  (C) Copyright 2021-2023 Hewlett Packard Enterprise Development LP
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -46,6 +46,7 @@ const targetNodeFile string = "/var/log/console/TargetNodes.txt"
 
 type K8Service interface {
 	printK8sInfo()
+	getReplicaCount() (replicaCnt int, err error)
 	updateReplicaCount(newReplicaCnt int)
 	updateNodesPerPod(newNumMtn, newNumRvr int)
 	getPodLocationAlias(podID string) (loc string, err error)
@@ -57,7 +58,7 @@ type K8Manager struct {
 	clientset *kubernetes.Clientset
 }
 
-func NewK8Manager() (K8Service, error) {
+func NewK8Manager() (*K8Manager, error) {
 	// creates the in-cluster config
 	var err error
 	var config *rest.Config = nil
@@ -115,6 +116,26 @@ func (k8s K8Manager) printK8sInfo() {
 		fmt.Printf("Found cray-conman pod in default namespace\n")
 	}
 
+}
+
+// Grab the current number of console-node replicas from k8s
+func (k8s K8Manager) getReplicaCount() (replicaCnt int, err error) {
+	// get the stateful set
+	consoleNodeRepCount := -1
+	dep, err := k8s.clientset.AppsV1().StatefulSets("services").Get("cray-console-node", metav1.GetOptions{})
+	if errors.IsNotFound(err) {
+		log.Printf("StatefulSet cray-console-node not found in services namespace\n")
+		return consoleNodeRepCount, err
+	} else if statusError, isStatus := err.(*errors.StatusError); isStatus {
+		log.Printf("Error getting statefulSet cray-console-node in services namespace: %v\n", statusError.ErrStatus.Message)
+		return consoleNodeRepCount, err
+	} else if err != nil {
+		log.Printf("Unknown error getting statefulSet cray-console-node in services namespace: %s", err.Error())
+		return consoleNodeRepCount, err
+	}
+
+	consoleNodeRepCount = int(*dep.Spec.Replicas)
+	return consoleNodeRepCount, nil
 }
 
 // Function to update the number of console-node replicas

@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added dependency injection to allow for unit testing
 - Added <https://pkg.go.dev/github.com/go-chi/chi/v5@v5.0.7> for routing. Lock at v5.0.7 due to golang version bump in v5.0.8
-- CASMCMS-7167 - Adding pod location API to enable monitoring resiliency
+- CASMCMS-7167 - Adding pod location API, replica API to enable monitoring resiliency.
 
 ## [1.6.3] - 2023-02-24
 ### Changed

@@ -1,7 +1,7 @@
 //
 //  MIT License
 //
-//  (C) Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+//  (C) Copyright 2021-2023 Hewlett Packard Enterprise Development LP
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -47,6 +47,7 @@ type DataService interface {
 	checkHeartbeats()
 	doGetPodLocation(w http.ResponseWriter, r *http.Request)
 	doGetNodePod(w http.ResponseWriter, r *http.Request)
+	doGetPodReplicaCount(w http.ResponseWriter, r *http.Request)
 	getNodePodForXname(xname string) (string, error)
 }
 
@@ -173,6 +174,10 @@ type GetNodePodResponse struct {
 // GetNodeData - input data for call to getNodeData
 type GetNodeData struct {
 	XName string `json:"xname"`
+}
+
+type GetNodeReplicasResponse struct {
+	Replicas int `json:"replicas"`
 }
 
 // doGetPodLocation response data
@@ -353,4 +358,28 @@ func (DataManager) getNodePodForXname(xname string) (string, error) {
 
 	// return the result
 	return fmt.Sprintf("cray-console-node-%s", nd.NodeConsoleName), nil
+}
+
+func (dm DataManager) doGetPodReplicaCount(w http.ResponseWriter, r *http.Request) {
+	// only allow 'GET' calls
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", "GET")
+		sendJSONError(w, http.StatusMethodNotAllowed,
+			fmt.Sprintf("(%s) Not Allowed", r.Method))
+		return
+	}
+
+	nodeRepCount, err := dm.k8Service.getReplicaCount()
+	if err != nil {
+		log.Printf("Error: There was an error while retrieving console-node replica counts: %s\n", err)
+		var body = BaseResponse{
+			Msg: fmt.Sprintf("There was an error while retrieving console-node replica counts: %s\n", err),
+		}
+		SendResponseJSON(w, http.StatusInternalServerError, body)
+	}
+
+	var resp GetNodeReplicasResponse
+	resp.Replicas = nodeRepCount
+	SendResponseJSON(w, http.StatusOK, resp)
+	return
 }

@@ -52,4 +52,5 @@ func setupRoutes(ds DataService, hs HealthService, dbs DebugService) {
 
 	// v1
 	router.Get("/console-operator/v1/location/{podID}", ds.doGetPodLocation)
+	router.Get("/console-operator/v1/replicas", ds.doGetPodReplicaCount)
 }
