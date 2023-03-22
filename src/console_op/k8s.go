@@ -1,7 +1,7 @@
 //
 //  MIT License
 //
-//  (C) Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+//  (C) Copyright 2021-2023 Hewlett Packard Enterprise Development LP
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -127,10 +127,10 @@ func (k8s K8Manager) getReplicaCount() (replicaCnt int, err error) {
 		log.Printf("StatefulSet cray-console-node not found in services namespace\n")
 		return consoleNodeRepCount, err
 	} else if statusError, isStatus := err.(*errors.StatusError); isStatus {
-		log.Printf("Error getting statefulSet %v\n", statusError.ErrStatus.Message)
+		log.Printf("Error getting statefulSet cray-console-node in services namespace: %v\n", statusError.ErrStatus.Message)
 		return consoleNodeRepCount, err
 	} else if err != nil {
-		log.Printf("Unknown error getting statefulSet: %s", err.Error())
+		log.Printf("Unknown error getting statefulSet cray-console-node in services namespace: %s", err.Error())
 		return consoleNodeRepCount, err
 	}
 
