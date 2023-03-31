@@ -246,10 +246,17 @@ func (nm NodeManager) updateNodeCounts(numMtnNodes, numRvrNodes int) {
 	nm.k8Service.updateReplicaCount(newNumPods)
 
 	// update the number of mtn + river consoles to watch per pod
-	// NOTE: adding a little slop to how many each pod wants just for a little
-	//  wiggle room, not strictly needed
+	// NOTE: adding a little slop to how many each pod wants
+	// needed for worst case where a replica can aquire more nodes
+	// however, the only available nodes are themselves. Adding the replica counts
+	// will allow room to avoid orphaned mtn or rvr nodes.
 	newMtn := int(math.Ceil(float64(numMtnNodes)/float64(newNumPods)) + 1)
 	newRvr := int(math.Ceil(float64(numRvrNodes)/float64(newNumPods)) + 1)
+	currNodeReplicas, err := nm.k8Service.getReplicaCount()
+	if err != nil {
+		newMtn += currNodeReplicas
+		newRvr += currNodeReplicas
+	}
 	log.Printf("New number of nodes per pod- Mtn: %d, Rvr: %d", newMtn, newRvr)
 
 	// push new numbers where they need to go
