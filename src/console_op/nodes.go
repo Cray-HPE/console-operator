@@ -256,12 +256,14 @@ func (nm NodeManager) updateNodeCounts(numMtnNodes, numRvrNodes int) {
 	if err != nil {
 		newMtn += currNodeReplicas
 		newRvr += currNodeReplicas
-	}
-	log.Printf("New number of nodes per pod- Mtn: %d, Rvr: %d", newMtn, newRvr)
-
-	// push new numbers where they need to go
-	if newRvr != numRvrNodesPerPod || newMtn != numMtnNodesPerPod {
-		// something changed so we need to update
+		log.Printf("Adding replica padding per pod- Mtn: %d, Rvr: %d", newMtn, newRvr)
 		nm.k8Service.updateNodesPerPod(newMtn, newRvr)
+	} else {
+		log.Printf("New number of nodes per pod- Mtn: %d, Rvr: %d", newMtn, newRvr)
+		// push new numbers where they need to go
+		if newRvr != numRvrNodesPerPod || newMtn != numMtnNodesPerPod {
+			// something changed so we need to update
+			nm.k8Service.updateNodesPerPod(newMtn, newRvr)
+		}
 	}
 }
