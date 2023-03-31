@@ -250,13 +250,9 @@ func (dm DataManager) doGetPodLocation(w http.ResponseWriter, r *http.Request) {
 			xname = xna.xname
 		}
 	}
+
 	if xname == "" {
-		log.Printf("Could not find a mapping of node alias name to xname\n")
-		var body = BaseResponse{
-			Msg: fmt.Sprintf("There was an error getting the xnames from cray-sls %s", err),
-		}
-		SendResponseJSON(w, http.StatusInternalServerError, body)
-		return
+		log.Printf("Warning: Could not find a mapping of node alias name to xname.\n")
 	}
 
 	// 200 ok
