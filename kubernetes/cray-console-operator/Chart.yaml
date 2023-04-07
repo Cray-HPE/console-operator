@@ -23,7 +23,7 @@
 #
 apiVersion: v2
 name: cray-console-operator
-version: 0.0.0
+version: 0.0.0-chart
 description: Kubernetes resources for cray-console-operator
 keywords:
   - cray-console
@@ -38,11 +38,11 @@ dependencies:
 maintainers:
 - name: dlaine-hpe
   email: laine@hpe.com
-appVersion: 0.0.0
+appVersion: 0.0.0-image
 annotations:
   artifacthub.io/images: |
     - name: cray-console-operator
-      image: artifactory.algol60.net/csm-docker/stable/cray-console-operator:0.0.0
+      image: artifactory.algol60.net/csm-docker/S-T-A-B-L-E/cray-console-operator:0.0.0-image
     - name: alpine
       image: alpine:latest
   artifacthub.io/license: MIT

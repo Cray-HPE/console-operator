@@ -26,9 +26,10 @@ go 1.13
 
 require (
 	github.com/Azure/go-autorest/autorest v0.11.18 // indirect
+	github.com/go-chi/chi/v5 v5.0.7
 	github.com/googleapis/gnostic v0.3.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/tidwall/gjson v1.7.5
+	github.com/tidwall/gjson v1.9.3
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e // indirect
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
