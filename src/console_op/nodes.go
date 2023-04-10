@@ -34,6 +34,23 @@ import (
 	"strings"
 )
 
+type NodeService interface {
+	getRedfishEndpoints() ([]redfishEndpoint, error)
+	getStateComponents() ([]stateComponent, error)
+	getCurrentNodesFromHSM() (nodes []nodeConsoleInfo)
+	updateNodeCounts(numMtnNodes, numRvrNodes int)
+}
+
+// Implements NodeService
+type NodeManager struct {
+	k8Service K8Service
+}
+
+// Inject dependencies
+func NewNodeManager(k8Service K8Service) NodeService {
+	return &NodeManager{k8Service: k8Service}
+}
+
 // Struct to hold all node level information needed to form a console connection
 // NOTE: this is the basic unit of information required for each node
 type nodeConsoleInfo struct {
@@ -90,7 +107,7 @@ func (sc stateComponent) String() string {
 }
 
 // Query hsm for redfish endpoint information
-func getRedfishEndpoints() ([]redfishEndpoint, error) {
+func (NodeManager) getRedfishEndpoints() ([]redfishEndpoint, error) {
 	type response struct {
 		RedfishEndpoints []redfishEndpoint
 	}
@@ -115,7 +132,7 @@ func getRedfishEndpoints() ([]redfishEndpoint, error) {
 }
 
 // Query hsm for state component information
-func getStateComponents() ([]stateComponent, error) {
+func (NodeManager) getStateComponents() ([]stateComponent, error) {
 	// get the component states from hsm - includes river/mountain information
 	type response struct {
 		Components []stateComponent
@@ -141,19 +158,19 @@ func getStateComponents() ([]stateComponent, error) {
 	return rp.Components, nil
 }
 
-func getCurrentNodesFromHSM() (nodes []nodeConsoleInfo) {
+func (nm NodeManager) getCurrentNodesFromHSM() (nodes []nodeConsoleInfo) {
 	// Get the BMC IP addresses and user, and password for individual nodes.
 	// conman is only set up for River nodes.
 	log.Printf("Starting to get current nodes on the system")
 
-	rfEndpoints, err := getRedfishEndpoints()
+	rfEndpoints, err := nm.getRedfishEndpoints()
 	if err != nil {
 		log.Printf("Unable to build configuration file - error fetching redfish endpoints: %s", err)
 		return nil
 	}
 
 	// get the state information to find mountain/river designation
-	stComps, err := getStateComponents()
+	stComps, err := nm.getStateComponents()
 	if err != nil {
 		log.Printf("Unable to build configuration file - error fetching state components: %s", err)
 		return nil
@@ -198,7 +215,7 @@ func getCurrentNodesFromHSM() (nodes []nodeConsoleInfo) {
 }
 
 // update settings based on the current number of nodes in the system
-func updateNodeCounts(numMtnNodes, numRvrNodes int) {
+func (nm NodeManager) updateNodeCounts(numMtnNodes, numRvrNodes int) {
 	// update the number of pods based on max numbers
 	// NOTE: at this point we will require one more than absolutely required both
 	//  to handle the edge case of exactly matching a multiple of the max per
@@ -226,18 +243,27 @@ func updateNodeCounts(numMtnNodes, numRvrNodes int) {
 	}
 
 	// update the number of nodes / pod based on number of pods
-	updateReplicaCount(newNumPods)
+	nm.k8Service.updateReplicaCount(newNumPods)
 
 	// update the number of mtn + river consoles to watch per pod
-	// NOTE: adding a little slop to how many each pod wants just for a little
-	//  wiggle room, not strictly needed
+	// NOTE: adding a little slop to how many each pod wants
+	// needed for worst case where a replica can aquire more nodes
+	// however, the only available nodes are themselves. Adding the replica counts
+	// will allow room to avoid orphaned mtn or rvr nodes.
 	newMtn := int(math.Ceil(float64(numMtnNodes)/float64(newNumPods)) + 1)
 	newRvr := int(math.Ceil(float64(numRvrNodes)/float64(newNumPods)) + 1)
-	log.Printf("New number of nodes per pod- Mtn: %d, Rvr: %d", newMtn, newRvr)
-
-	// push new numbers where they need to go
-	if newRvr != numRvrNodesPerPod || newMtn != numMtnNodesPerPod {
-		// something changed so we need to update
-		updateNodesPerPod(newMtn, newRvr)
+	currNodeReplicas, err := nm.k8Service.getReplicaCount()
+	if err != nil {
+		newMtn += currNodeReplicas
+		newRvr += currNodeReplicas
+		log.Printf("Adding replica padding per pod- Mtn: %d, Rvr: %d", newMtn, newRvr)
+		nm.k8Service.updateNodesPerPod(newMtn, newRvr)
+	} else {
+		log.Printf("New number of nodes per pod- Mtn: %d, Rvr: %d", newMtn, newRvr)
+		// push new numbers where they need to go
+		if newRvr != numRvrNodesPerPod || newMtn != numMtnNodesPerPod {
+			// something changed so we need to update
+			nm.k8Service.updateNodesPerPod(newMtn, newRvr)
+		}
 	}
 }
