@@ -5,14 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [1.7.0] - 2023-04-05
 ### Changed
 - CASMCMS-8415 - Mountain key updates are now asynchronous
 - CASMCMS-8416 - Database updates include updating the node type
-
+- CASMCMS-8252 - Enabled building of unstable artifacts
+- CASMCMS-8252 - Updated header of update_versions.conf to reflect new tool options
 - Added dependency injection to allow for unit testing
 - Added <https://pkg.go.dev/github.com/go-chi/chi/v5@v5.0.7> for routing. Lock at v5.0.7 due to golang version bump in v5.0.8
 - CASMCMS-7167 - Adding pod location API, replica API to enable monitoring resiliency.
+
+### Fixed
+ - Spelling corrections.
+ - CASMCMS-8252: Update Chart with correct image and chart version strings during builds.
 
 ## [1.6.3] - 2023-02-24
 ### Changed
@@ -25,15 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.6.1] - 2022-12-20
 ### Added
 - Add Artifactory authentication to Jenkinsfile
-
-## [Unreleased]
-### Changed
- - CASMCMS-8252: Enabled building of unstable artifacts
- - CASMCMS-8252: Updated header of update_versions.conf to reflect new tool options
-
-### Fixed
- - Spelling corrections.
- - CASMCMS-8252: Update Chart with correct image and chart version strings during builds.
 
 ## [1.6.0] - 2022-08-04
 ### Changed
