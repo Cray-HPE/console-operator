@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+### Removed
+- Removed defunct files leftover from previous versioning system
+
 ## [1.7.0] - 2023-04-05
 ### Changed
 - CASMCMS-8415 - Mountain key updates are now asynchronous
@@ -42,5 +46,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.0] - 2022-07-12
 ### Changed
  - CASMCMS-7830: Update the base image to newer version.
-
-[1.0.0] - (no date)
