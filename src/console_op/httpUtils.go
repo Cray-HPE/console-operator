@@ -1,7 +1,7 @@
 //
 //  MIT License
 //
-//  (C) Copyright 2019-2022 Hewlett Packard Enterprise Development LP
+//  (C) Copyright 2019-2022, 2024 Hewlett Packard Enterprise Development LP
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -94,6 +94,7 @@ func getURL(URL string, requestHeaders map[string]string) ([]byte, int, error) {
 		return nil, -1, err
 	}
 	log.Printf("getURL Response Status code: %d\n", resp.StatusCode)
+	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		// handle error
