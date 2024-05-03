@@ -1,7 +1,7 @@
 //
 //  MIT License
 //
-//  (C) Copyright 2019-2022 Hewlett Packard Enterprise Development LP
+//  (C) Copyright 2019-2024 Hewlett Packard Enterprise Development LP
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -53,6 +53,12 @@ func NewNodeManager(k8Service K8Service) NodeService {
 
 // Struct to hold all node level information needed to form a console connection
 // NOTE: this is the basic unit of information required for each node
+// NOTE: expected values for 'Class' are:
+//
+//	Mountain - Cray hardware in full liquid cooled rack (ssh via key)
+//	Hill - Cray hardware in freestanding rack (ssh via key)
+//	River - Other brand hardware in freestanding rack (ipmi via user/password)
+//	Paradise - Cray xd224 - foxconn bmc (ssh via user/password)
 type nodeConsoleInfo struct {
 	NodeName string // node xname
 	BmcName  string // bmc xname
@@ -70,6 +76,11 @@ func (node nodeConsoleInfo) isMountain() bool {
 // Function to determine if a node is River hardware
 func (node nodeConsoleInfo) isRiver() bool {
 	return node.Class == "River"
+}
+
+// Function to determine if a node is Paradise hardware
+func (node nodeConsoleInfo) isParadise() bool {
+	return node.Class == "Paradise"
 }
 
 // Provide a function to convert struct to string
@@ -158,6 +169,61 @@ func (NodeManager) getStateComponents() ([]stateComponent, error) {
 	return rp.Components, nil
 }
 
+// Query hsm for Paradise (xd224) nodes
+func (NodeManager) getParadiseNodes() (map[string]struct{}, error) {
+	// Paradise nodes are identified by having the manufacturer as 'Foxconn' and
+	// the model as either 'HPE Cray Supercomputing XD224' or '1A62WCB00-600-G'.
+	// There are a limited number of units that were sent to the field with the
+	// incorrect model '1A62WCB00-600-G' so we must support that.
+
+	// Structs to unmarshal the inventory data we care about
+	type HsmNodeFRUInfo struct {
+		Model        string
+		Manufacturer string
+		PartNumber   string
+		SerialNumber string
+	}
+	type HsmPopulatedFRU struct {
+		Type        string
+		Subtype     string
+		NodeFRUInfo HsmNodeFRUInfo
+	}
+	type HsmHardwareInventoryItem struct {
+		ID           string
+		Type         string
+		PopulatedFRU HsmPopulatedFRU
+	}
+
+	// Query hsm to get the Paradise nodes
+	// NOTE: this only pulls the Foxconn BMCs from the inventory so there is a bit of
+	//  server side filtering going on
+	URL := "http://cray-smd/hsm/v2/Inventory/Hardware?Manufacturer=Foxconn&Type=Node"
+	data, _, err := getURL(URL, nil)
+	if err != nil {
+		log.Printf("Unable to get hardware inventory from hsm:%s", err)
+		return nil, err
+	}
+
+	// decode the response
+	rp := []HsmHardwareInventoryItem{}
+	err = json.Unmarshal(data, &rp)
+	if err != nil {
+		log.Printf("Error unmarshalling data: %s", err)
+		return nil, err
+	}
+
+	// create a set of the Paradise items
+	nodes := map[string]struct{}{}
+	for _, node := range rp {
+		if node.PopulatedFRU.NodeFRUInfo.Model == "HPE Cray Supercomputing XD224" ||
+			node.PopulatedFRU.NodeFRUInfo.Model == "1A62WCB00-600-G" {
+			nodes[node.ID] = struct{}{}
+		}
+	}
+
+	return nodes, nil
+}
+
 func (nm NodeManager) getCurrentNodesFromHSM() (nodes []nodeConsoleInfo) {
 	// Get the BMC IP addresses and user, and password for individual nodes.
 	// conman is only set up for River nodes.
@@ -176,6 +242,14 @@ func (nm NodeManager) getCurrentNodesFromHSM() (nodes []nodeConsoleInfo) {
 		return nil
 	}
 
+	// get the paradise nodes
+	// NOTE: this returns a pseudo-set to speed up lookups
+	paradiseNodes, err := nm.getParadiseNodes()
+	if err != nil {
+		// log the error but don't die - most systems will not have Paradise nodes anyway
+		log.Printf("Unable to identify if there are any Paradise nodes on the system. %s", err)
+	}
+
 	// create a lookup map for the redfish information
 	rfMap := make(map[string]redfishEndpoint)
 	for _, rf := range rfEndpoints {
@@ -184,11 +258,15 @@ func (nm NodeManager) getCurrentNodesFromHSM() (nodes []nodeConsoleInfo) {
 
 	// create river and mountain node information
 	nodes = nil
-	var xnames []string = nil
 	for _, sc := range stComps {
 		if sc.Type == "Node" {
 			// create a new entry for this node - take initial vals from state component info
 			newNode := nodeConsoleInfo{NodeName: sc.ID, Class: sc.Class, NID: sc.NID, Role: sc.Role}
+
+			// If this is a paradise node, switch the class name
+			if _, isParadise := paradiseNodes[sc.ID]; isParadise {
+				newNode.Class = "Paradise"
+			}
 
 			// pull information about the node BMC from the redfish information
 			bmcName := sc.ID[0:strings.LastIndex(sc.ID, "n")]
@@ -202,9 +280,6 @@ func (nm NodeManager) getCurrentNodesFromHSM() (nodes []nodeConsoleInfo) {
 				// add to the list of nodes
 				nodes = append(nodes, newNode)
 
-				// add to list of bmcs to get creds from
-				//log.Printf("Added node: %s", newNode)
-				xnames = append(xnames, bmcName)
 			} else {
 				log.Printf("Node with no BMC present: %s, bmcName:%s", sc.ID, bmcName)
 			}
@@ -247,7 +322,7 @@ func (nm NodeManager) updateNodeCounts(numMtnNodes, numRvrNodes int) {
 
 	// update the number of mtn + river consoles to watch per pod
 	// NOTE: adding a little slop to how many each pod wants
-	// needed for worst case where a replica can aquire more nodes
+	// needed for worst case where a replica can acquire more nodes
 	// however, the only available nodes are themselves. Adding the replica counts
 	// will allow room to avoid orphaned mtn or rvr nodes.
 	newMtn := int(math.Ceil(float64(numMtnNodes)/float64(newNumPods)) + 1)

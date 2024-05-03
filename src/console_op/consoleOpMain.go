@@ -1,7 +1,7 @@
 //
 //  MIT License
 //
-//  (C) Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+//  (C) Copyright 2021-2024 Hewlett Packard Enterprise Development LP
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -154,7 +154,7 @@ func doHardwareUpdate(ds DataService, ns NodeService, updateAll bool, mountainCr
 		// update counts of nodes
 		if v.isRiver() {
 			numRvrNodes++
-		} else if v.isMountain() {
+		} else if v.isMountain() || v.isParadise() {
 			numMtnNodes++
 		} else {
 			log.Printf("Error: unknown node class: %s on node: %s", v.Class, v.NodeName)
@@ -195,7 +195,7 @@ func watchHardware(ds DataService, ns NodeService) {
 		//  do not perform the hardware update check
 		if !inShutdown {
 			// do the update
-			updateSucessful := doHardwareUpdate(ds, ns, forceUpdateCnt == 0, mountainCredsUpdateChannel)
+			updateSuccessful := doHardwareUpdate(ds, ns, forceUpdateCnt == 0, mountainCredsUpdateChannel)
 
 			// set up for next update - normal countdown
 			forceUpdateCnt--
@@ -205,7 +205,7 @@ func watchHardware(ds DataService, ns NodeService) {
 			}
 
 			// look for failure - override complete update on failure
-			if !updateSucessful {
+			if !updateSuccessful {
 				forceUpdateCnt = 0
 			}
 		}
