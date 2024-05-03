@@ -1,7 +1,7 @@
 //
 //  MIT License
 //
-//  (C) Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+//  (C) Copyright 2021-2024 Hewlett Packard Enterprise Development LP
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -141,7 +141,6 @@ func (dm DebugManager) doSetMaxNodesPerPod(w http.ResponseWriter, r *http.Reques
 
 	// write the response
 	w.WriteHeader(http.StatusOK)
-	return
 }
 
 // NodePodPair - information for which console-node pod an xname is controlled by
@@ -191,7 +190,6 @@ func (dm DebugManager) doInfo(w http.ResponseWriter, r *http.Request) {
 
 	// write the response
 	SendResponseJSON(w, http.StatusOK, info)
-	return
 }
 
 // Debugging only - clear all current data from services
@@ -220,7 +218,6 @@ func (dm DebugManager) doClearData(w http.ResponseWriter, r *http.Request) {
 
 	// write the response
 	w.WriteHeader(http.StatusOK)
-	return
 }
 
 // Debugging only - suspend querying the state manager
@@ -239,7 +236,6 @@ func (DebugManager) doSuspend(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Updates suspended")
 	// write the response
 	w.WriteHeader(http.StatusOK)
-	return
 }
 
 // Debugging only - resume querying the state manager
@@ -259,5 +255,4 @@ func (DebugManager) doResume(w http.ResponseWriter, r *http.Request) {
 
 	// write the response
 	w.WriteHeader(http.StatusOK)
-	return
 }

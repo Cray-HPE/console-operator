@@ -1,7 +1,7 @@
 //
 //  MIT License
 //
-//  (C) Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+//  (C) Copyright 2021-2024 Hewlett Packard Enterprise Development LP
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -321,7 +321,6 @@ func (dm DataManager) doGetNodePod(w http.ResponseWriter, r *http.Request) {
 	var res GetNodePodResponse
 	res.PodName = podName
 	SendResponseJSON(w, http.StatusOK, res)
-	return
 }
 
 // query the console-data service for the correct pod
@@ -348,7 +347,7 @@ func (DataManager) getNodePodForXname(xname string) (string, error) {
 	var nd RetNodeConsoleInfo
 	err = json.Unmarshal(rd, &nd)
 	if err != nil {
-		log.Printf("Error unmashalling data from console-data: %s", err)
+		log.Printf("Error unmarshalling data from console-data: %s", err)
 		return "", err
 	}
 
@@ -377,5 +376,4 @@ func (dm DataManager) doGetPodReplicaCount(w http.ResponseWriter, r *http.Reques
 	var resp GetNodeReplicasResponse
 	resp.Replicas = nodeRepCount
 	SendResponseJSON(w, http.StatusOK, resp)
-	return
 }

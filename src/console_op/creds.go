@@ -1,7 +1,7 @@
 //
 //  MIT License
 //
-//  (C) Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+//  (C) Copyright 2020-2024 Hewlett Packard Enterprise Development LP
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -230,7 +230,7 @@ func vaultGetMountainConsoleCredentials() error {
 		log.Printf("Unable to authenticate to Vault: %s", err)
 		return fmt.Errorf("Unable to authenticate to Vault: %s", err)
 	}
-	// If the response code is not 200 then we failed authenticaton.
+	// If the response code is not 200 then we failed authentication.
 	if responseCode != 200 {
 		log.Printf(
 			"Vault authentication failed.  Response code: %d  Message: %s",
@@ -423,7 +423,7 @@ func deployMountainConsoleKeys(nodes []nodeConsoleInfo) (bool, scsdList) {
 	// Call the HMS scsd service to deploy the public key.
 	log.Print("Calling scsd to deploy Mountain BMC ssh key(s)")
 	URL := "http://cray-scsd/v1/bmc/loadcfg"
-	data, rc, err := postURL(URL, jsonScsdParam, nil)
+	data, rc, _ := postURL(URL, jsonScsdParam, nil)
 
 	// consider any http return code < 400 as success
 	success := rc < 300
@@ -450,7 +450,7 @@ func deployMountainConsoleKeys(nodes []nodeConsoleInfo) (bool, scsdList) {
 	//  {"Xname":"x5000c2s5b0","StatusCode":422,"StatusMsg":"Target 'x5000c2s5b0' in bad HSM state: Unknown"}
 	//  {"Xname":"x5000c3r1b0","StatusCode":500,"StatusMsg":"Internal Server Error"}
 	//
-	// In addition perhpas we want to keep a map (map[string]string) of hostname to
+	// In addition perhaps we want to keep a map (map[string]string) of hostname to
 	// public key as a record of the deployment success or errors on a per
 	// BMC and public key basis.  This could be used in the future to reduce the time
 	// to redeploy all keys.
