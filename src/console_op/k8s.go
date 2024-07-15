@@ -169,6 +169,8 @@ func updateNodesPerPod(newNumMtn, newNumRvr int) {
 	//  pods without restarting them.  It is complicated to update all
 	//  running pods through a direct rest interface...
 
+	log.Printf("Entering k8s.updateNodesPerPod with %d file errors", numFileErrors)
+
 	// make sure the directory exists to put the file in place
 	pos := strings.LastIndex(targetNodeFile, "/")
 	if pos < 0 {
@@ -207,12 +209,39 @@ func updateNodesPerPod(newNumMtn, newNumRvr int) {
 	numFileErrors = 0
 	defer cf.Close()
 
+	// add debug code:
+	r_str := fmt.Sprintf("River:%d", newNumRvr)
+	m_str := fmt.Sprintf("Mountain:%d", newNumMtn)
+
+	log.Printf("  Writing number of river nodes per pod: %s", r_str)
+	rvr_n, rvr_err := cf.WriteString(fmt.Sprintf("%s\n", r_str))
+	if rvr_err != nil {
+		log.Printf("  ERROR writing river data to file: %s", rvr_err)
+	} else {
+		log.Printf("  Wrote %d bytes of river data to file", rvr_n)
+	}
+
+	log.Printf("  Writing number of mountain nodes per pod: %s", m_str)
+	mtn_n, mtn_err := cf.WriteString(fmt.Sprintf("%s\n", m_str))
+	if mtn_err != nil {
+		log.Printf("  ERROR writing mountain data to file: %s", mtn_err)
+	} else {
+		log.Printf("  Wrote %d bytes of mountain data to file", mtn_n)
+	}
+
+	if mtn_err == nil && rvr_err == nil {
+		log.Printf("Updating cached number of nodes per pod")
+		numMtnNodesPerPod = newNumMtn
+		numRvrNodesPerPod = newNumRvr
+	} else {
+		log.Printf("ERROR writing file, NOT updating cached number of nodes per pod")
+	}
 	// The file only consists of two lines, write them
-	cf.WriteString(fmt.Sprintf("River:%d\n", newNumRvr))
-	cf.WriteString(fmt.Sprintf("Mountain:%d\n", newNumMtn))
+	//cf.WriteString(fmt.Sprintf("River:%d\n", newNumRvr))
+	//cf.WriteString(fmt.Sprintf("Mountain:%d\n", newNumMtn))
 
 	// only update the stored values after correctly set in file - this should
 	// trigger a retry if something goes wrong
-	numMtnNodesPerPod = newNumMtn
-	numRvrNodesPerPod = newNumRvr
+	//numMtnNodesPerPod = newNumMtn
+	//numRvrNodesPerPod = newNumRvr
 }
