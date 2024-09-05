@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.1] - 2024-09-05
 ### Dependencies
 - CASMCMS-9136: Bump minimum `cray-services` base chart version to 11.0
 
