@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# (C) Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+# (C) Copyright 2021-2022, 2024 Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -33,7 +33,7 @@ sources:
 - https://github.com/Cray-HPE/console-operator
 dependencies:
 - name: cray-service
-  version: ^7.0.0
+  version: ^11.0.0
   repository: https://artifactory.algol60.net/artifactory/csm-helm-charts/
 maintainers:
 - name: dlaine-hpe
