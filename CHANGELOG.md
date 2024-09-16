@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump `golang.org/x/crypto` from 0.0.0-20210616213533-5ff15b29337e to 0.17.0 ([#61](https://github.com/Cray-HPE/console-operator/pull/61))
 - Move to Go 1.18 to resolve CVE ([#61](https://github.com/Cray-HPE/console-operator/pull/61))
 - Bump `github.com/gogo/protobuf` from 1.2.2-0.20190723190241-65acae22fc9d to 1.3.2 ([#62](https://github.com/Cray-HPE/console-operator/pull/62))
+- Bump `golang.org/x/net` from 0.10.0 to 0.23.0 ([#63](https://github.com/Cray-HPE/console-operator/pull/63))
 
 ## [1.8.1] - 2024-09-05
 ### Dependencies
