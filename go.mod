@@ -1,4 +1,4 @@
-// Copyright 2021, 2023 Hewlett Packard Enterprise Development LP
+// Copyright 2021, 2023-2024 Hewlett Packard Enterprise Development LP
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -22,7 +22,7 @@
 
 module stash.us.cray.com/SCMS/console-operator
 
-go 1.13
+go 1.16
 
 require (
 	github.com/Azure/go-autorest/autorest v0.11.18 // indirect
