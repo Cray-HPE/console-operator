@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Update Go version in `go.mod` to 1.16, to match the Go version we're using.
 
+### Dependencies
+- Bump `golang.org/x/crypto` from 0.0.0-20210616213533-5ff15b29337e to 0.17.0 ([#61](https://github.com/Cray-HPE/console-operator/pull/61))
+
 ## [1.8.1] - 2024-09-05
 ### Dependencies
 - CASMCMS-9136: Bump minimum `cray-services` base chart version to 11.0
