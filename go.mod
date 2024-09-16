@@ -25,18 +25,48 @@ module stash.us.cray.com/SCMS/console-operator
 go 1.18
 
 require (
-	github.com/Azure/go-autorest/autorest v0.11.18 // indirect
 	github.com/go-chi/chi/v5 v5.0.7
-	github.com/googleapis/gnostic v0.3.1 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tidwall/gjson v1.9.3
-	golang.org/x/crypto v0.17.0 // indirect
-	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
-	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
-	gopkg.in/inf.v0 v0.9.1 // indirect
-	k8s.io/api v0.0.0 // indirect
 	k8s.io/apimachinery v0.0.0
 	k8s.io/client-go v12.0.0+incompatible
+)
+
+require (
+	cloud.google.com/go v0.38.0 // indirect
+	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
+	github.com/Azure/go-autorest/autorest v0.11.18 // indirect
+	github.com/Azure/go-autorest/autorest/adal v0.9.13 // indirect
+	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
+	github.com/Azure/go-autorest/logger v0.2.1 // indirect
+	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/form3tech-oss/jwt-go v3.2.2+incompatible // indirect
+	github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d // indirect
+	github.com/golang/protobuf v1.3.2 // indirect
+	github.com/google/gofuzz v1.0.0 // indirect
+	github.com/googleapis/gnostic v0.3.1 // indirect
+	github.com/gophercloud/gophercloud v0.1.0 // indirect
+	github.com/json-iterator/go v1.1.7 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/modern-go/reflect2 v1.0.1 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.0 // indirect
+	golang.org/x/crypto v0.17.0 // indirect
+	golang.org/x/net v0.10.0 // indirect
+	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45 // indirect
+	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/term v0.15.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
+	google.golang.org/appengine v1.5.0 // indirect
+	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
+	gopkg.in/inf.v0 v0.9.1 // indirect
+	gopkg.in/yaml.v2 v2.2.4 // indirect
+	k8s.io/api v0.0.0 // indirect
+	k8s.io/klog v0.4.0 // indirect
+	k8s.io/utils v0.0.0-20190801114015-581e00157fb1 // indirect
+	sigs.k8s.io/yaml v1.1.0 // indirect
 )
 
 // Pinned to kubernetes-1.16.2

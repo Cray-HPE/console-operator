@@ -1,43 +1,55 @@
 # cloud.google.com/go v0.38.0
+## explicit
 cloud.google.com/go/compute/metadata
 # github.com/Azure/go-autorest v14.2.0+incompatible
+## explicit
 github.com/Azure/go-autorest
 # github.com/Azure/go-autorest/autorest v0.11.18
-## explicit
+## explicit; go 1.12
 github.com/Azure/go-autorest/autorest
 github.com/Azure/go-autorest/autorest/azure
 # github.com/Azure/go-autorest/autorest/adal v0.9.13
+## explicit; go 1.12
 github.com/Azure/go-autorest/autorest/adal
 # github.com/Azure/go-autorest/autorest/date v0.3.0
+## explicit; go 1.12
 github.com/Azure/go-autorest/autorest/date
 # github.com/Azure/go-autorest/logger v0.2.1
+## explicit; go 1.12
 github.com/Azure/go-autorest/logger
 # github.com/Azure/go-autorest/tracing v0.6.0
+## explicit; go 1.12
 github.com/Azure/go-autorest/tracing
 # github.com/davecgh/go-spew v1.1.1
+## explicit
 github.com/davecgh/go-spew/spew
 # github.com/form3tech-oss/jwt-go v3.2.2+incompatible
+## explicit
 github.com/form3tech-oss/jwt-go
 # github.com/go-chi/chi/v5 v5.0.7
-## explicit
+## explicit; go 1.14
 github.com/go-chi/chi/v5
 # github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d
+## explicit
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
 # github.com/golang/protobuf v1.3.2
+## explicit
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
 # github.com/google/gofuzz v1.0.0
+## explicit; go 1.12
 github.com/google/gofuzz
 # github.com/googleapis/gnostic v0.3.1
-## explicit
+## explicit; go 1.12
 github.com/googleapis/gnostic/OpenAPIv2
 github.com/googleapis/gnostic/compiler
 github.com/googleapis/gnostic/extensions
 # github.com/gophercloud/gophercloud v0.1.0
+## explicit
 github.com/gophercloud/gophercloud
 github.com/gophercloud/gophercloud/openstack
 github.com/gophercloud/gophercloud/openstack/identity/v2/tenants
@@ -46,26 +58,32 @@ github.com/gophercloud/gophercloud/openstack/identity/v3/tokens
 github.com/gophercloud/gophercloud/openstack/utils
 github.com/gophercloud/gophercloud/pagination
 # github.com/json-iterator/go v1.1.7
+## explicit; go 1.12
 github.com/json-iterator/go
 # github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
+## explicit
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
+## explicit
 github.com/modern-go/reflect2
 # github.com/spf13/pflag v1.0.5
-## explicit
+## explicit; go 1.12
 # github.com/tidwall/gjson v1.9.3
-## explicit
+## explicit; go 1.12
 github.com/tidwall/gjson
 # github.com/tidwall/match v1.1.1
+## explicit; go 1.15
 github.com/tidwall/match
 # github.com/tidwall/pretty v1.2.0
+## explicit; go 1.16
 github.com/tidwall/pretty
 # golang.org/x/crypto v0.17.0
-## explicit
+## explicit; go 1.18
 golang.org/x/crypto/pkcs12
 golang.org/x/crypto/pkcs12/internal/rc2
 golang.org/x/crypto/ssh/terminal
 # golang.org/x/net v0.10.0
+## explicit; go 1.17
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/http/httpguts
@@ -73,18 +91,22 @@ golang.org/x/net/http2
 golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 # golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
+## explicit; go 1.11
 golang.org/x/oauth2
 golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
 # golang.org/x/sys v0.15.0
+## explicit; go 1.18
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 # golang.org/x/term v0.15.0
+## explicit; go 1.18
 golang.org/x/term
 # golang.org/x/text v0.14.0
+## explicit; go 1.18
 golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
@@ -93,6 +115,7 @@ golang.org/x/text/unicode/norm
 ## explicit
 golang.org/x/time/rate
 # google.golang.org/appengine v1.5.0
+## explicit
 google.golang.org/appengine
 google.golang.org/appengine/internal
 google.golang.org/appengine/internal/app_identity
@@ -109,9 +132,10 @@ google.golang.org/appengine/urlfetch
 ## explicit
 gopkg.in/inf.v0
 # gopkg.in/yaml.v2 v2.2.4
+## explicit
 gopkg.in/yaml.v2
 # k8s.io/api v0.0.0 => k8s.io/api v0.0.0-20191016110408-35e52d86657a
-## explicit
+## explicit; go 1.12
 k8s.io/api/admissionregistration/v1
 k8s.io/api/admissionregistration/v1beta1
 k8s.io/api/apps/v1
@@ -151,7 +175,7 @@ k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
 # k8s.io/apimachinery v0.0.0 => k8s.io/apimachinery v0.0.0-20191004115801-a2eda9f80ab8
-## explicit
+## explicit; go 1.12
 k8s.io/apimachinery/pkg/api/errors
 k8s.io/apimachinery/pkg/api/meta
 k8s.io/apimachinery/pkg/api/resource
@@ -187,7 +211,7 @@ k8s.io/apimachinery/pkg/version
 k8s.io/apimachinery/pkg/watch
 k8s.io/apimachinery/third_party/forked/golang/reflect
 # k8s.io/client-go v12.0.0+incompatible => k8s.io/client-go v0.0.0-20191016111102-bec269661e48
-## explicit
+## explicit; go 1.12
 k8s.io/client-go/discovery
 k8s.io/client-go/kubernetes
 k8s.io/client-go/kubernetes/scheme
@@ -252,10 +276,13 @@ k8s.io/client-go/util/flowcontrol
 k8s.io/client-go/util/jsonpath
 k8s.io/client-go/util/keyutil
 # k8s.io/klog v0.4.0
+## explicit; go 1.12
 k8s.io/klog
 # k8s.io/utils v0.0.0-20190801114015-581e00157fb1
+## explicit; go 1.12
 k8s.io/utils/integer
 # sigs.k8s.io/yaml v1.1.0
+## explicit
 sigs.k8s.io/yaml
 # k8s.io/api => k8s.io/api v0.0.0-20191016110408-35e52d86657a
 # k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20191016113550-5357c4baaf65
