@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.1] - 2024-09-16
+### Dependencies
+- Pin `google.golang.org/grpc` to resolve CVE
+
 ## [1.9.0] - 2024-09-16
 ### Changed
 - Record Go version during build, so it is in the build log.
