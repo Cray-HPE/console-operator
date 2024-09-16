@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# (C) Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+# (C) Copyright 2020-2022, 2024 Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -41,6 +41,7 @@ COPY vendor/ $GOPATH/src
 
 # Build configure_conman
 RUN set -ex \
+    && go version \
     && go env -w GO111MODULE=auto \
     && go build -v -i -o /app/console_operator $GOPATH/src/console_op
 
