@@ -27,7 +27,7 @@ go 1.18
 require (
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/tidwall/gjson v1.9.3
-	k8s.io/apimachinery v0.0.0
+	k8s.io/apimachinery v0.16.13
 	k8s.io/client-go v12.0.0+incompatible
 )
 
@@ -49,7 +49,6 @@ require (
 	github.com/json-iterator/go v1.1.7 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	golang.org/x/crypto v0.21.0 // indirect
@@ -62,18 +61,18 @@ require (
 	google.golang.org/appengine v1.5.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/yaml.v2 v2.2.4 // indirect
+	gopkg.in/yaml.v2 v2.2.8 // indirect
 	k8s.io/api v0.0.0 // indirect
-	k8s.io/klog v0.4.0 // indirect
+	k8s.io/klog v1.0.0 // indirect
 	k8s.io/utils v0.0.0-20190801114015-581e00157fb1 // indirect
 	sigs.k8s.io/yaml v1.1.0 // indirect
 )
 
 // Pinned to kubernetes-1.16.2
+// (except apimachinery, to resolve CVE https://github.com/Cray-HPE/console-operator/security/dependabot/21)
 replace (
 	k8s.io/api => k8s.io/api v0.0.0-20191016110408-35e52d86657a
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20191016113550-5357c4baaf65
-	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20191004115801-a2eda9f80ab8
 	k8s.io/apiserver => k8s.io/apiserver v0.0.0-20191016112112-5190913f932d
 	k8s.io/cli-runtime => k8s.io/cli-runtime v0.0.0-20191016114015-74ad18325ed5
 	k8s.io/client-go => k8s.io/client-go v0.0.0-20191016111102-bec269661e48
