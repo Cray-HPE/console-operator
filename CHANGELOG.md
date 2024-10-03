@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.0] - 2024-10-03
+### Changed
+- CASMCMS-9147 - stop using alpine:latest base image.
+
 ## [1.9.2] - 2024-09-16
 ### Dependencies
 - Bump `google.golang.org/protobuf` from 1.30.0 to 1.33.0 ([#66](https://github.com/Cray-HPE/console-operator/pull/66))

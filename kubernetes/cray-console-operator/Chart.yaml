@@ -44,5 +44,5 @@ annotations:
     - name: cray-console-operator
       image: artifactory.algol60.net/csm-docker/S-T-A-B-L-E/cray-console-operator:0.0.0-image
     - name: alpine
-      image: alpine:latest
+      image: artifactory.algol60.net/csm-docker/stable/docker.io/library/alpine:3
   artifacthub.io/license: MIT
