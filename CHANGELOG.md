@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.2] - 10/23/2024
+### Added
+- CASMCMS-8681 - add inotify-tools utilities to the base image.
+
+## [1.8.1]
+This is an invalid release - do not use.
+
 ## [1.8.0] - 2024-05-03
 ### Added
 - CASMCMS-8899 - add support for Paradise (xd224) nodes.
