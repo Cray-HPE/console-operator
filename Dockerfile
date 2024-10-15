@@ -53,7 +53,7 @@ FROM artifactory.algol60.net/csm-docker/stable/docker.io/library/alpine:3.15 as 
 RUN set -eux \
 	&& apk add --upgrade --no-cache apk-tools \
     && apk update \
-    && apk add --no-cache less openssh jq curl tar \
+    && apk add --no-cache less openssh jq curl tar inotify-tools \
     && apk -U upgrade --no-cache
 
 # Copy in the needed files
