@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.0] - 2024-10-15
+### Added
+- CASMCMS-8681 - add add inotify-tools to the base image.
+
 ## [1.10.0] - 2024-10-03
 ### Changed
 - CASMCMS-9147 - stop using alpine:latest base image.
