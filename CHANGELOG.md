@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- CASMCMS-8681 - add inotify-tools utilities to the base image.
+
+## [1.8.1]
+This is an invalid release - do not use.
 
 ## [1.8.0] - 2024-05-03
 ### Added
