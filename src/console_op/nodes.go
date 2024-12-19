@@ -305,6 +305,10 @@ func (nm NodeManager) updateNodeCounts(numMtnNodes, numRvrNodes int) {
 		return
 	}
 
+	// cache the number of each type of node
+	totalRvrNodes = numRvrNodes
+	totalMtnNodes = numMtnNodes
+
 	// lets be extra paranoid about divide by zero issues...
 	mm := math.Max(float64(maxMtnNodesPerPod), 1)
 	mr := math.Max(float64(maxRvrNodesPerPod), 1)

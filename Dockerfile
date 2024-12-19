@@ -53,7 +53,7 @@ FROM artifactory.algol60.net/csm-docker/stable/docker.io/library/alpine:3.15 as 
 RUN set -eux \
 	&& apk add --upgrade --no-cache apk-tools \
     && apk update \
-    && apk add --no-cache less openssh jq curl tar inotify-tools \
+    && apk add --no-cache less openssh-client jq curl tar inotify-tools \
     && apk -U upgrade --no-cache
 
 # Copy in the needed files
@@ -73,6 +73,7 @@ RUN echo 'alias info="curl -sk -X GET http://localhost:26777/console-operator/in
 RUN echo 'alias suspend="curl -sk -X POST http://localhost:26777/console-operator/suspend"' >> /app/bashrc
 RUN echo 'alias resume="curl -sk -X POST http://localhost:26777/console-operator/resume"' >> /app/bashrc
 RUN echo 'alias clearData="curl -sk -X DELETE http://localhost:26777/console-operator/clearData"' >> /app/bashrc
+RUN echo 'alias activeNodePods="curl -sk -X GET http://cray-console-data/v1/activepods"' >> /app/bashrc
 
 # set to user nobody so this won't run as root
 USER 65534:65534
