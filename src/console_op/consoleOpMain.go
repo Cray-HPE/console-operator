@@ -55,6 +55,8 @@ var numNodePods int = -1
 // startup until console-data is populated
 var numRvrNodesPerPod int = -1
 var numMtnNodesPerPod int = -1
+var totalRvrNodes int = -1
+var totalMtnNodes int = -1
 
 // The maximum number of river/mountain nodes per pod are
 // based on testing on Shasta systems at this time.  These numbers

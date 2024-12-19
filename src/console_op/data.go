@@ -49,6 +49,7 @@ type DataService interface {
 	doGetNodePod(w http.ResponseWriter, r *http.Request)
 	doGetPodReplicaCount(w http.ResponseWriter, r *http.Request)
 	getNodePodForXname(xname string) (string, error)
+	doGetCurrentTargets(w http.ResponseWriter, r *http.Request)
 }
 
 // Implements DataService
@@ -193,6 +194,15 @@ func newPodLocationDataResponse(podName string, alias string, xname string) *Pod
 	pld.Alias = alias
 	pld.Xname = xname
 	return pld
+}
+
+// doGetCurrentTargets response data
+type GetCurrentTargetsResponse struct {
+	TargetNumRvrNodes int `json:"targetnumrvrnodes"`
+	TargetNumMtnNodes int `json:"targetnummtnnodes"`
+	TotalRvrNodes     int `json:"totalrvrnodes"`
+	TotalMtnNodes     int `json:"totalmtnnodes"`
+	TargetNumNodePods int `json:"targetnumnodepods"`
 }
 
 // BaseResponse - error message for a bad response
@@ -375,5 +385,25 @@ func (dm DataManager) doGetPodReplicaCount(w http.ResponseWriter, r *http.Reques
 
 	var resp GetNodeReplicasResponse
 	resp.Replicas = nodeRepCount
+	SendResponseJSON(w, http.StatusOK, resp)
+}
+
+func (dm DataManager) doGetCurrentTargets(w http.ResponseWriter, r *http.Request) {
+	// only allow 'GET' calls
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", "GET")
+		sendJSONError(w, http.StatusMethodNotAllowed,
+			fmt.Sprintf("(%s) Not Allowed", r.Method))
+		return
+	}
+
+	// Transfer the current values
+	// NOTE - not thread safe, but should be ok
+	var resp GetCurrentTargetsResponse
+	resp.TargetNumMtnNodes = numMtnNodesPerPod
+	resp.TargetNumRvrNodes = numRvrNodesPerPod
+	resp.TotalMtnNodes = totalMtnNodes
+	resp.TotalRvrNodes = totalRvrNodes
+	resp.TargetNumNodePods = numNodePods
 	SendResponseJSON(w, http.StatusOK, resp)
 }
