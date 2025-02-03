@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.13.0] - 2025-02-03
+### Dependencies
+- CASMCMS-9266: Bump `golang.org/x/crypto` and `golang.org/x/net` to resolve CVEs.
+
 ## [1.12.0] - 2024-12-19
 ### Fixed
 - CASMTRIAGE-7594 - clean up resilience, rebalance nodes, and accept other worker nodes
