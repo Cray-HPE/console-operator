@@ -1,7 +1,7 @@
 //
 //  MIT License
 //
-//  (C) Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+//  (C) Copyright 2021-2025 Hewlett Packard Enterprise Development LP
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -30,7 +30,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -41,6 +41,7 @@ import (
 // Variable to hold address of console-data service
 var dataAddrBase string = "http://cray-console-data/v1"
 
+// DataService - interface for interactions with the console-data service
 type DataService interface {
 	dataAddNodes(newNodes []nodeConsoleInfo) bool
 	dataRemoveNodes(removedNodes []nodeConsoleInfo)
@@ -52,13 +53,13 @@ type DataService interface {
 	doGetCurrentTargets(w http.ResponseWriter, r *http.Request)
 }
 
-// Implements DataService
+// DataManager - Implements DataService
 type DataManager struct {
 	k8Service  K8Service
 	slsService SlsService
 }
 
-// Constructor injection for dependencies
+// NewDataManager - factory function for DataService
 func NewDataManager(k8s K8Service, sls SlsService) DataService {
 	return &DataManager{k8Service: k8s, slsService: sls}
 }
@@ -177,11 +178,12 @@ type GetNodeData struct {
 	XName string `json:"xname"`
 }
 
+// GetNodeReplicasResponse - data struct for getting the number of replicas
 type GetNodeReplicasResponse struct {
 	Replicas int `json:"replicas"`
 }
 
-// doGetPodLocation response data
+// PodLocationDataResponse - doGetPodLocation response data
 type PodLocationDataResponse struct {
 	PodName string `json:"podname"`
 	Alias   string `json:"alias"`
@@ -196,7 +198,7 @@ func newPodLocationDataResponse(podName string, alias string, xname string) *Pod
 	return pld
 }
 
-// doGetCurrentTargets response data
+// GetCurrentTargetsResponse - doGetCurrentTargets response data
 type GetCurrentTargetsResponse struct {
 	TargetNumRvrNodes int `json:"targetnumrvrnodes"`
 	TargetNumMtnNodes int `json:"targetnummtnnodes"`
@@ -220,7 +222,7 @@ func (dm DataManager) doGetPodLocation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// `/console-operator/v1/location/{podID}`
+	// `/console-operator/location/{podID}`
 	podID := chi.URLParam(r, "podID")
 	if podID == "" {
 		log.Printf("There was an error reading the podID from the request %s", r.URL.Path)
@@ -284,7 +286,7 @@ func (dm DataManager) doGetNodePod(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// read the request data - must be in json content
-	reqBody, err := ioutil.ReadAll(r.Body)
+	reqBody, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
 		log.Printf("There was an error reading the request body: S%s\n", err)

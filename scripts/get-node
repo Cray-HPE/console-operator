@@ -28,4 +28,4 @@
 #   % get-node x0c3s1b0n0
 
 target={\"xname\":\"$1\"}
-curl -s -k -X GET -H "Content-Type: application/json" -d $target http://localhost:26777/console-operator/v0/getNodePod
+curl -s -k -X GET -H "Content-Type: application/json" -d $target http://localhost:26777/console-operator/getNodePod

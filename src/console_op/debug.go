@@ -1,7 +1,7 @@
 //
 //  MIT License
 //
-//  (C) Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+//  (C) Copyright 2021-2025 Hewlett Packard Enterprise Development LP
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -27,7 +27,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 )
@@ -39,6 +39,7 @@ import (
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+// DebugService - interface with debugging services
 type DebugService interface {
 	doInfo(w http.ResponseWriter, r *http.Request)
 	doClearData(w http.ResponseWriter, r *http.Request)
@@ -47,11 +48,13 @@ type DebugService interface {
 	doSetMaxNodesPerPod(w http.ResponseWriter, r *http.Request)
 }
 
+// DebugManager - implementation of DebugService
 type DebugManager struct {
 	dataService   DataService
 	healthService HealthService
 }
 
+// NewDebugManager - factory function for new DebugManager
 func NewDebugManager(ds DataService, hs HealthService) DebugService {
 	return &DebugManager{dataService: ds, healthService: hs}
 }
@@ -93,7 +96,7 @@ func (dm DebugManager) doSetMaxNodesPerPod(w http.ResponseWriter, r *http.Reques
 	}
 
 	// read the request data - must be in json content
-	reqBody, err := ioutil.ReadAll(r.Body)
+	reqBody, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
 		log.Printf("There was an error reading the request body: S%s\n", err)

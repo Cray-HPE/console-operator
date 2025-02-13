@@ -1,7 +1,7 @@
 //
 //  MIT License
 //
-//  (C) Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+//  (C) Copyright 2021-2025 Hewlett Packard Enterprise Development LP
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -272,6 +272,7 @@ func main() {
 	dataManager := NewDataManager(k8Manager, slsManager)
 	healthManager := NewHealthManager(dataManager)
 	debugManager := NewDebugManager(dataManager, healthManager)
+	consoleManager := NewConsoleManager(k8Manager, dataManager)
 
 	// Set up the zombie killer
 	go watchForZombies()
@@ -289,7 +290,7 @@ func main() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 
-	setupRoutes(dataManager, healthManager, debugManager)
+	setupRoutes(dataManager, healthManager, debugManager, consoleManager)
 
 	// spin the server in a separate thread so main can wait on an os
 	// signal to cleanly shut down

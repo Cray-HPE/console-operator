@@ -1,7 +1,7 @@
 //
 //  MIT License
 //
-//  (C) Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+//  (C) Copyright 2020-2025 Hewlett Packard Enterprise Development LP
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -213,7 +213,7 @@ func vaultGetMountainConsoleCredentials() error {
 	// This will overwrite the existing public or private key files.
 
 	// Authenticate to Vault
-	svcAcctToken, err := ioutil.ReadFile(svcAcctTokenFile)
+	svcAcctToken, err := os.ReadFile(svcAcctTokenFile)
 	if err != nil {
 		log.Printf("Unable to read the service account token file: %s  Can not authenticate to vault.", err)
 		return fmt.Errorf("Unable to read the service account token file: %s can not authenticate to vault", err)
@@ -250,7 +250,7 @@ func vaultGetMountainConsoleCredentials() error {
 	log.Printf("Obtained BMC console key from vault.")
 
 	// Write the private key to the local file system.
-	err = ioutil.WriteFile(mountainConsoleKey, []byte(pvtKey), 0600)
+	err = os.WriteFile(mountainConsoleKey, []byte(pvtKey), 0600)
 	if err != nil {
 		log.Printf("Failed to write our the private ssh key received from Vault.")
 		return err
