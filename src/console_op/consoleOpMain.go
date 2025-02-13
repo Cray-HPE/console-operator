@@ -272,6 +272,7 @@ func main() {
 	dataManager := NewDataManager(k8Manager, slsManager)
 	healthManager := NewHealthManager(dataManager)
 	debugManager := NewDebugManager(dataManager, healthManager)
+	consoleManager := NewConsoleManager(k8Manager)
 
 	// Set up the zombie killer
 	go watchForZombies()
@@ -289,7 +290,7 @@ func main() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 
-	setupRoutes(dataManager, healthManager, debugManager)
+	setupRoutes(dataManager, healthManager, debugManager, consoleManager)
 
 	// spin the server in a separate thread so main can wait on an os
 	// signal to cleanly shut down
