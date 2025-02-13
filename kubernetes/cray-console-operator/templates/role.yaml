@@ -42,3 +42,6 @@ rules:
 - apiGroups: ["apps"]
   resources: ["statefulsets"]
   verbs: ["create", "delete", "get", "list", "update", "patch"]
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create"]
