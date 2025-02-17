@@ -104,7 +104,8 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 		}
 		fmt.Printf("Received: %s\\n", message)
 		// Echo the message back to the client
-		if err := conn.WriteMessage(websocket.TextMessage, message); err != nil {
+		outMsg := []byte(fmt.Sprintf("%s: %s", xname, message))
+		if err := conn.WriteMessage(websocket.TextMessage, outMsg); err != nil {
 			log.Println("Error writing message:", err)
 			break
 		}
