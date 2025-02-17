@@ -25,8 +25,9 @@ module stash.us.cray.com/SCMS/console-operator
 go 1.18
 
 require (
-	github.com/gorilla/websocket v1.5.3
 	github.com/go-chi/chi/v5 v5.0.7
+	github.com/gorilla/websocket v1.5.3
+	github.com/hpcloud/tail v1.0.0
 	github.com/tidwall/gjson v1.9.3
 	k8s.io/apimachinery v0.16.13
 	k8s.io/client-go v12.0.0+incompatible
@@ -63,7 +64,9 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
+	gopkg.in/fsnotify.v1 v1.4.7 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
+	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 	k8s.io/api v0.0.0 // indirect
 	k8s.io/klog v1.0.0 // indirect

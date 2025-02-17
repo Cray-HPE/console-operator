@@ -30,12 +30,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"sync"
 
-	"github.com/gorilla/websocket"
-
 	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/websocket"
+	"github.com/hpcloud/tail"
 )
 
 // ConsoleService interface for interacting with the consoles themselves
@@ -74,7 +75,7 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// `/console-operator/interact/{nodeXname}`
+	// `/console-operator/interact/{nodeXname}` - pull out the node being interacted with
 	xname := chi.URLParam(r, "nodeXname")
 	if xname == "" {
 		log.Printf("There was an error reading the node xname from the request %s", r.URL.Path)
@@ -85,31 +86,74 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	log.Printf("r.Header: %v\n", r.Header)
-	log.Printf("r.Body: %v\n", r.Body)
+	// upgrade https to secure websocket connection
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Println("Error upgrading:", err)
 		return
 	}
-
 	defer conn.Close()
-	// Listen for incoming messages
-	for {
-		// Read message from the client
-		_, message, err := conn.ReadMessage()
-		if err != nil {
-			log.Println("Error reading message:", err)
-			break
+
+	inputFile, err := os.Create("test.txt")
+	go func() {
+		// close the file when done
+		defer func() {
+			inputFile.Close()
+		}()
+
+		// append input lines to the file
+		for {
+			//get the next input line
+			_, message, err := conn.ReadMessage()
+			if err != nil {
+				log.Println("Error reading message:", err)
+				break
+			}
+
+			// append to the file
+			outMsg := fmt.Sprintf("%s: %s", xname, message)
+			inputFile.WriteString(outMsg)
+			inputFile.Sync()
 		}
-		fmt.Printf("Received: %s\\n", message)
-		// Echo the message back to the client
-		outMsg := []byte(fmt.Sprintf("%s: %s", xname, message))
-		if err := conn.WriteMessage(websocket.TextMessage, outMsg); err != nil {
-			log.Println("Error writing message:", err)
-			break
-		}
+	}()
+
+	// take any output from the file and output to the websocket
+	t, err := tail.TailFile(
+		"test.txt",
+		tail.Config{Follow: true, Location: &tail.SeekInfo{Offset: 0, Whence: 2}},
+	)
+	if err != nil {
+		log.Fatalf("tail file err: %v", err)
 	}
+
+	go func() {
+		for line := range t.Lines {
+			if line.Text != "" {
+				outMsg := []byte(fmt.Sprintf("%s: %s", xname, line.t))
+				if err := conn.WriteMessage(websocket.TextMessage, outMsg); err != nil {
+					log.Println("Error writing message:", err)
+					break
+				}
+			}
+		}
+	}()
+
+	// Forward input to the console
+	//for {
+	// Read message from the client
+	//	_, message, err := conn.ReadMessage()
+	//	if err != nil {
+	//		log.Println("Error reading message:", err)
+	//		break
+	//	}
+	//	fmt.Printf("Received: %s\\n", message)
+	//	// Echo the message back to the client
+	//	outMsg := []byte(fmt.Sprintf("%s: %s", xname, message))
+	//	if err := conn.WriteMessage(websocket.TextMessage, outMsg); err != nil {
+	//		log.Println("Error writing message:", err)
+	//		break
+	//	}
+	//}
 }
 
 // Finds and returns the node where the given pod is running within the k8s cluster.
