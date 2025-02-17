@@ -92,10 +92,17 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 		fmt.Println("Error upgrading:", err)
 		return
 	}
-	defer conn.Close()
+	defer func() {
+		log.Printf("WEBSOCKET:: Doing deferred close")
+		conn.Close()
+	}()
 
-	inputFile, err := os.Create("test.txt")
-	log.Printf("Starting input handler")
+	// create the input file and push something out there.
+	inputFile, err := os.Create("/tmp/test.txt")
+	inputFile.WriteString("Starting")
+	inputFile.Sync()
+
+	log.Printf("WEBSOCKET:: Starting input handler")
 	go func() {
 		// close the file when done
 		defer func() {
@@ -103,7 +110,7 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 		}()
 
 		// append input lines to the file
-		log.Printf("Starting read loop")
+		log.Printf("WEBSOCKET:: Starting read loop")
 		for {
 			//get the next input line
 			_, message, err := conn.ReadMessage()
@@ -113,27 +120,26 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 			}
 
 			// append to the file
-			log.Printf("  Writing output to file")
 			outMsg := fmt.Sprintf("%s: %s", xname, message)
-			log.Printf("  Received input line: %s", outMsg)
+			log.Printf("  WEBSOCKET:: Received input line: %s", outMsg)
 			inputFile.WriteString(outMsg)
 			inputFile.Sync()
 		}
 	}()
 
 	// take any output from the file and output to the websocket
-	log.Printf("Starting file tailing")
+	log.Printf("WEBSOCKET:: Starting file tailing")
 	t, err := tail.TailFile(
-		"test.txt",
+		"/tmp/test.txt",
 		tail.Config{Follow: true, Location: &tail.SeekInfo{Offset: 0, Whence: 2}},
 	)
 	if err != nil {
 		log.Fatalf("tail file err: %v", err)
 	}
 
-	log.Printf("Starting tail loop")
+	log.Printf("WEBSOCKET:: Starting tail loop")
 	for line := range t.Lines {
-		log.Printf("  Read line: %s", line.Text)
+		log.Printf("  WEBSOCKET:: Read line: %s", line.Text)
 		if line.Text != "" {
 			outMsg := []byte(fmt.Sprintf("%s: %s", xname, line.Text))
 			if err := conn.WriteMessage(websocket.TextMessage, outMsg); err != nil {
@@ -143,6 +149,7 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
+	log.Printf("WEBSOCKET:: Exiting websocket")
 	// Forward input to the console
 	//for {
 	// Read message from the client
