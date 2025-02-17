@@ -129,7 +129,7 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 	go func() {
 		for line := range t.Lines {
 			if line.Text != "" {
-				outMsg := []byte(fmt.Sprintf("%s: %s", xname, line.t))
+				outMsg := []byte(fmt.Sprintf("%s: %s", xname, line))
 				if err := conn.WriteMessage(websocket.TextMessage, outMsg); err != nil {
 					log.Println("Error writing message:", err)
 					break
