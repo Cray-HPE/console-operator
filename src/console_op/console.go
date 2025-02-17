@@ -95,6 +95,7 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 	defer conn.Close()
 
 	inputFile, err := os.Create("test.txt")
+	log.Printf("Starting input handler")
 	go func() {
 		// close the file when done
 		defer func() {
@@ -112,12 +113,14 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 
 			// append to the file
 			outMsg := fmt.Sprintf("%s: %s", xname, message)
+			log.Printf("  Received input line: %s", outMsg)
 			inputFile.WriteString(outMsg)
 			inputFile.Sync()
 		}
 	}()
 
 	// take any output from the file and output to the websocket
+	log.Printf("Starting file tailing")
 	t, err := tail.TailFile(
 		"test.txt",
 		tail.Config{Follow: true, Location: &tail.SeekInfo{Offset: 0, Whence: 2}},
@@ -126,10 +129,12 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 		log.Fatalf("tail file err: %v", err)
 	}
 
+	log.Printf("Reading tailing lines")
 	go func() {
 		for line := range t.Lines {
+			log.Printf("  Read line: %s", line.Text)
 			if line.Text != "" {
-				outMsg := []byte(fmt.Sprintf("%s: %s", xname, line))
+				outMsg := []byte(fmt.Sprintf("%s: %s", xname, line.Text))
 				if err := conn.WriteMessage(websocket.TextMessage, outMsg); err != nil {
 					log.Println("Error writing message:", err)
 					break
