@@ -103,6 +103,7 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 		}()
 
 		// append input lines to the file
+		log.Printf("Starting read loop")
 		for {
 			//get the next input line
 			_, message, err := conn.ReadMessage()
@@ -112,6 +113,7 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 			}
 
 			// append to the file
+			log.Printf("  Writing output to file")
 			outMsg := fmt.Sprintf("%s: %s", xname, message)
 			log.Printf("  Received input line: %s", outMsg)
 			inputFile.WriteString(outMsg)
@@ -129,19 +131,17 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 		log.Fatalf("tail file err: %v", err)
 	}
 
-	log.Printf("Reading tailing lines")
-	go func() {
-		for line := range t.Lines {
-			log.Printf("  Read line: %s", line.Text)
-			if line.Text != "" {
-				outMsg := []byte(fmt.Sprintf("%s: %s", xname, line.Text))
-				if err := conn.WriteMessage(websocket.TextMessage, outMsg); err != nil {
-					log.Println("Error writing message:", err)
-					break
-				}
+	log.Printf("Starting tail loop")
+	for line := range t.Lines {
+		log.Printf("  Read line: %s", line.Text)
+		if line.Text != "" {
+			outMsg := []byte(fmt.Sprintf("%s: %s", xname, line.Text))
+			if err := conn.WriteMessage(websocket.TextMessage, outMsg); err != nil {
+				log.Println("Error writing message:", err)
+				break
 			}
 		}
-	}()
+	}
 
 	// Forward input to the console
 	//for {
