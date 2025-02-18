@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# (C) Copyright 2020-2022, 2024 Hewlett Packard Enterprise Development LP
+# (C) Copyright 2020-2022, 2024-2025 Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -47,7 +47,7 @@ RUN set -ex \
 
 ### Final Stage ###
 # Start with a fresh image so build tools are not included
-FROM artifactory.algol60.net/csm-docker/stable/docker.io/library/alpine:3.15 as base
+FROM artifactory.algol60.net/csm-docker/stable/docker.io/library/alpine:3.21 as base
 
 # Install conman application from package
 RUN set -eux \
