@@ -50,6 +50,7 @@ type K8Service interface {
 	updateReplicaCount(newReplicaCnt int)
 	updateNodesPerPod(newNumMtn, newNumRvr int)
 	getPodLocationAlias(podID string) (loc string, err error)
+	getClientSet() *kubernetes.Clientset
 }
 
 // Implements K8Service
@@ -76,6 +77,10 @@ func NewK8Manager() (*K8Manager, error) {
 	}
 
 	return &K8Manager{config: config, clientset: clientset}, nil
+}
+
+func (k8s K8Manager) getClientSet() *kubernetes.Clientset {
+	return k8s.clientset
 }
 
 // Function to print information from the k8s cluster

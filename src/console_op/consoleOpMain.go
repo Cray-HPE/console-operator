@@ -272,7 +272,7 @@ func main() {
 	dataManager := NewDataManager(k8Manager, slsManager)
 	healthManager := NewHealthManager(dataManager)
 	debugManager := NewDebugManager(dataManager, healthManager)
-	consoleManager := NewConsoleManager(k8Manager)
+	consoleManager := NewConsoleManager(k8Manager, dataManager)
 
 	// Set up the zombie killer
 	go watchForZombies()

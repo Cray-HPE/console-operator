@@ -29,8 +29,10 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/hpcloud/tail v1.0.0
 	github.com/tidwall/gjson v1.9.3
+	k8s.io/api v0.28.4
 	k8s.io/apimachinery v0.16.13
-	k8s.io/client-go v12.0.0+incompatible
+	k8s.io/client-go v0.28.4
+	k8s.io/client-go/tools/remotecommand v0.28.4
 )
 
 require (
@@ -68,7 +70,6 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
-	k8s.io/api v0.0.0 // indirect
 	k8s.io/klog v1.0.0 // indirect
 	k8s.io/utils v0.0.0-20190801114015-581e00157fb1 // indirect
 	sigs.k8s.io/yaml v1.1.0 // indirect

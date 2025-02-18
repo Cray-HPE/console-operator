@@ -27,16 +27,21 @@
 package main
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"sync"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/websocket"
-	"github.com/hpcloud/tail"
+
+	v1 "k8s.io/api/core/v1"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/tools/remotecommand"
+	"k8s.io/kubectl/pkg/scheme"
 )
 
 // ConsoleService interface for interacting with the consoles themselves
@@ -47,12 +52,13 @@ type ConsoleService interface {
 
 // ConsoleManager implements a ConsoleService
 type ConsoleManager struct {
-	k8Service K8Service
+	k8s         K8Service
+	dataService DataService
 }
 
 // NewConsoleManager factory function to create a new ConsoleService
-func NewConsoleManager(k8s K8Service) ConsoleService {
-	return &ConsoleManager{k8Service: k8s}
+func NewConsoleManager(k8s K8Service, ds DataService) ConsoleService {
+	return &ConsoleManager{k8s: k8s, dataService: ds}
 }
 
 var clients = make(map[*websocket.Conn]bool) // Connected clients
@@ -94,60 +100,93 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 	}
 	defer func() {
 		log.Printf("WEBSOCKET:: Doing deferred close")
-		conn.Close()
 	}()
 
-	// create the input file and push something out there.
-	inputFile, err := os.Create("/tmp/test.txt")
-	inputFile.WriteString("Starting")
-	inputFile.Sync()
+	// find which container is monitoring this node
+	podName, err := cs.dataService.getNodePodForXname(xname)
+	//pod, err := cs.k8s.getClientSet().CoreV1().Pods("services").Get(podName, metav1.GetOptions{})
 
-	log.Printf("WEBSOCKET:: Starting input handler")
-	go func() {
-		// close the file when done
-		defer func() {
-			inputFile.Close()
-		}()
+	// Build the command to be executed in the pod
+	cmd := []string{"sh"}
 
-		// append input lines to the file
-		log.Printf("WEBSOCKET:: Starting read loop")
-		for {
-			//get the next input line
-			_, message, err := conn.ReadMessage()
-			if err != nil {
-				log.Println("Error reading message:", err)
-				break
-			}
+	// Execute the command in the pod
+	log.Printf("WEBSOCKET:: creating request")
+	req := cs.k8s.getClientSet().CoreV1().RESTClient().Post().
+		Resource("pods").
+		Name(podName).
+		Namespace("services").
+		SubResource("exec").
+		VersionedParams(&v1.PodExecOptions{
+			Command: cmd,
+			Stdin:   true,
+			Stdout:  true,
+			Stderr:  true,
+			TTY:     true,
+		}, scheme.ParameterCodec)
 
-			// append to the file
-			outMsg := fmt.Sprintf("%s: %s", xname, message)
-			log.Printf("  WEBSOCKET:: Received input line: %s", outMsg)
-			inputFile.WriteString(outMsg)
-			inputFile.Sync()
-		}
-	}()
+	log.Printf("WEBSOCKET:: creating executor")
+	executor, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
+	if err != nil {
+		return "", "", fmt.Errorf("failed to create executor: %v", err)
+	}
+
+	log.Printf("WEBSOCKET:: starting streamWithContext")
+	var stdin, stdout bytes.Buffer
+	ctx, cancel := context.WithCancel(context.Background)
+	err = executor.StreamWithContext(ctx, remotecommand.StreamOptions{
+		Stdin:  &stdin,
+		Stdout: &stdout,
+		Tty:    true,
+	})
+	if err != nil {
+		return "", "", fmt.Errorf("failed to execute command in pod: %v", err)
+	}
 
 	// take any output from the file and output to the websocket
-	log.Printf("WEBSOCKET:: Starting file tailing")
-	t, err := tail.TailFile(
-		"/tmp/test.txt",
-		tail.Config{Follow: true, Location: &tail.SeekInfo{Offset: 0, Whence: 2}},
-	)
-	if err != nil {
-		log.Fatalf("tail file err: %v", err)
-	}
+	log.Printf("WEBSOCKET:: Starting piping output")
+	go func() {
+		// Log when this thread goes away
+		defer func() {
+			log.Printf("WEBSOCKET:: exiting tailing thread")
+		}()
 
-	log.Printf("WEBSOCKET:: Starting tail loop")
-	for line := range t.Lines {
-		log.Printf("  WEBSOCKET:: Read line: %s", line.Text)
-		if line.Text != "" {
-			outMsg := []byte(fmt.Sprintf("%s: %s", xname, line.Text))
-			if err := conn.WriteMessage(websocket.TextMessage, outMsg); err != nil {
-				log.Println("Error writing message:", err)
+		log.Printf("WEBSOCKET:: Starting output loop")
+		for line, err := stdout.ReadString('\n') {
+			if err != nil {
+				log.Println("Error Reading stdout message")
 				break
 			}
+			log.Printf("  WEBSOCKET:: Read line: %s", line)
+			if line != "" {
+				outMsg := []byte(fmt.Sprintf("%s: %s", xname, line))
+				if err := conn.WriteMessage(websocket.TextMessage, outMsg); err != nil {
+					log.Println("Error writing message to websocket:", err)
+					break
+				}
+			}
 		}
+	}()
+
+	log.Printf("WEBSOCKET:: Starting input handler")
+	// append input lines to the file
+	log.Printf("WEBSOCKET:: Starting read loop")
+	for {
+		//get the next input line
+		_, message, err := conn.ReadMessage()
+		if err != nil {
+			log.Println("Error reading message:", err)
+			break
+		}
+
+		log.Printf("  WEBSOCKET:: Received input line: %s", message)
+
+		// append to the file
+		stdin.Write(message)
+		inputFile.Sync()
 	}
+
+	conn.Close()
+	log.Printf("WEBSOCKET:: Closed connection")
 
 	log.Printf("WEBSOCKET:: Exiting websocket")
 	// Forward input to the console

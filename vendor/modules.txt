@@ -185,7 +185,7 @@ gopkg.in/tomb.v1
 # gopkg.in/yaml.v2 v2.2.8
 ## explicit
 gopkg.in/yaml.v2
-# k8s.io/api v0.0.0 => k8s.io/api v0.0.0-20191016110408-35e52d86657a
+# k8s.io/api v0.28.4 => k8s.io/api v0.0.0-20191016110408-35e52d86657a
 ## explicit; go 1.12
 k8s.io/api/admissionregistration/v1
 k8s.io/api/admissionregistration/v1beta1
@@ -261,7 +261,7 @@ k8s.io/apimachinery/pkg/util/yaml
 k8s.io/apimachinery/pkg/version
 k8s.io/apimachinery/pkg/watch
 k8s.io/apimachinery/third_party/forked/golang/reflect
-# k8s.io/client-go v12.0.0+incompatible => k8s.io/client-go v0.0.0-20191016111102-bec269661e48
+# k8s.io/client-go v0.28.4 => k8s.io/client-go v0.0.0-20191016111102-bec269661e48
 ## explicit; go 1.12
 k8s.io/client-go/discovery
 k8s.io/client-go/kubernetes
