@@ -151,7 +151,9 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 		}()
 
 		log.Printf("WEBSOCKET:: Starting output loop")
-		for line, err := stdout.ReadString('\n'); err==nil {
+		for {
+			// pull in the next line of input from the user
+			line, err := stdout.ReadString('\n')
 			if err != nil {
 				log.Println("Error Reading stdout message")
 				break
