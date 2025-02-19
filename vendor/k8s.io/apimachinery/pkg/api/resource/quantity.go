@@ -20,12 +20,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	math "math"
+	"math"
 	"math/big"
 	"strconv"
 	"strings"
-
-	cbor "k8s.io/apimachinery/pkg/runtime/serializer/cbor/direct"
 
 	inf "gopkg.in/inf.v0"
 )
@@ -36,7 +34,6 @@ import (
 //
 // The serialization format is:
 //
-// ```
 // <quantity>        ::= <signedNumber><suffix>
 //
 //	(Note that <suffix> may be empty, from the "" case in <decimalSI>.)
@@ -56,7 +53,6 @@ import (
 //	(Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.)
 //
 // <decimalExponent> ::= "e" <signedNumber> | "E" <signedNumber>
-// ```
 //
 // No matter which of the three exponent forms is used, no quantity may represent
 // a number greater than 2^63-1 in magnitude, nor may it have more than 3 decimal
@@ -71,16 +67,16 @@ import (
 // This means that Exponent/suffix will be adjusted up or down (with a
 // corresponding increase or decrease in Mantissa) such that:
 //
-// - No precision is lost
-// - No fractional digits will be emitted
-// - The exponent (or suffix) is as large as possible.
+//	a. No precision is lost
+//	b. No fractional digits will be emitted
+//	c. The exponent (or suffix) is as large as possible.
 //
 // The sign will be omitted unless the number is negative.
 //
 // Examples:
 //
-// - 1.5 will be serialized as "1500m"
-// - 1.5Gi will be serialized as "1536Mi"
+//	1.5 will be serialized as "1500m"
+//	1.5Gi will be serialized as "1536Mi"
 //
 // Note that the quantity will NEVER be internally represented by a
 // floating point number. That is the whole point of this exercise.
@@ -460,10 +456,9 @@ func (q *Quantity) CanonicalizeBytes(out []byte) (result, suffix []byte) {
 	}
 }
 
-// AsApproximateFloat64 returns a float64 representation of the quantity which
-// may lose precision. If precision matter more than performance, see
-// AsFloat64Slow. If the value of the quantity is outside the range of a
-// float64 +Inf/-Inf will be returned.
+// AsApproximateFloat64 returns a float64 representation of the quantity which may
+// lose precision. If the value of the quantity is outside the range of a float64
+// +Inf/-Inf will be returned.
 func (q *Quantity) AsApproximateFloat64() float64 {
 	var base float64
 	var exponent int
@@ -479,36 +474,6 @@ func (q *Quantity) AsApproximateFloat64() float64 {
 	}
 
 	return base * math.Pow10(exponent)
-}
-
-// AsFloat64Slow returns a float64 representation of the quantity.  This is
-// more precise than AsApproximateFloat64 but significantly slower.  If the
-// value of the quantity is outside the range of a float64 +Inf/-Inf will be
-// returned.
-func (q *Quantity) AsFloat64Slow() float64 {
-	infDec := q.AsDec()
-
-	var absScale int64
-	if infDec.Scale() < 0 {
-		absScale = int64(-infDec.Scale())
-	} else {
-		absScale = int64(infDec.Scale())
-	}
-	pow10AbsScale := big.NewInt(10)
-	pow10AbsScale = pow10AbsScale.Exp(pow10AbsScale, big.NewInt(absScale), nil)
-
-	var resultBigFloat *big.Float
-	if infDec.Scale() < 0 {
-		resultBigInt := new(big.Int).Mul(infDec.UnscaledBig(), pow10AbsScale)
-		resultBigFloat = new(big.Float).SetInt(resultBigInt)
-	} else {
-		pow10AbsScaleFloat := new(big.Float).SetInt(pow10AbsScale)
-		resultBigFloat = new(big.Float).SetInt(infDec.UnscaledBig())
-		resultBigFloat = resultBigFloat.Quo(resultBigFloat, pow10AbsScaleFloat)
-	}
-
-	result, _ := resultBigFloat.Float64()
-	return result
 }
 
 // AsInt64 returns a representation of the current value as an int64 if a fast conversion
@@ -625,16 +590,6 @@ func (q *Quantity) Sub(y Quantity) {
 	q.ToDec().d.Dec.Sub(q.d.Dec, y.AsDec())
 }
 
-// Mul multiplies the provided y to the current value.
-// It will return false if the result is inexact. Otherwise, it will return true.
-func (q *Quantity) Mul(y int64) bool {
-	q.s = ""
-	if q.d.Dec == nil && q.i.Mul(y) {
-		return true
-	}
-	return q.ToDec().d.Dec.Mul(q.d.Dec, inf.NewDec(y, inf.Scale(0))).UnscaledBig().IsInt64()
-}
-
 // Cmp returns 0 if the quantity is equal to y, -1 if the quantity is less than y, or 1 if the
 // quantity is greater than y.
 func (q *Quantity) Cmp(y Quantity) int {
@@ -697,7 +652,7 @@ func (q Quantity) MarshalJSON() ([]byte, error) {
 		copy(out[1:], q.s)
 		return out, nil
 	}
-	result := make([]byte, int64QuantityExpectedBytes)
+	result := make([]byte, int64QuantityExpectedBytes, int64QuantityExpectedBytes)
 	result[0] = '"'
 	number, suffix := q.CanonicalizeBytes(result[1:1])
 	// if the same slice was returned to us that we passed in, avoid another allocation by copying number into
@@ -714,12 +669,6 @@ func (q Quantity) MarshalJSON() ([]byte, error) {
 	result = append(result, suffix...)
 	result = append(result, '"')
 	return result, nil
-}
-
-func (q Quantity) MarshalCBOR() ([]byte, error) {
-	// The call to String() should never return the string "<nil>" because the receiver's
-	// address will never be nil.
-	return cbor.Marshal(q.String())
 }
 
 // ToUnstructured implements the value.UnstructuredConverter interface.
@@ -746,27 +695,6 @@ func (q *Quantity) UnmarshalJSON(value []byte) error {
 	}
 
 	// This copy is safe because parsed will not be referred to again.
-	*q = parsed
-	return nil
-}
-
-func (q *Quantity) UnmarshalCBOR(value []byte) error {
-	var s *string
-	if err := cbor.Unmarshal(value, &s); err != nil {
-		return err
-	}
-
-	if s == nil {
-		q.d.Dec = nil
-		q.i = int64Amount{}
-		return nil
-	}
-
-	parsed, err := ParseQuantity(strings.TrimSpace(*s))
-	if err != nil {
-		return err
-	}
-
 	*q = parsed
 	return nil
 }

@@ -19,10 +19,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	http "net/http"
+	"net/http"
 
-	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
-	scheme "k8s.io/client-go/kubernetes/scheme"
+	v1beta1 "k8s.io/api/extensions/v1beta1"
+	"k8s.io/client-go/kubernetes/scheme"
 	rest "k8s.io/client-go/rest"
 )
 
@@ -32,6 +32,7 @@ type ExtensionsV1beta1Interface interface {
 	DeploymentsGetter
 	IngressesGetter
 	NetworkPoliciesGetter
+	PodSecurityPoliciesGetter
 	ReplicaSetsGetter
 }
 
@@ -54,6 +55,10 @@ func (c *ExtensionsV1beta1Client) Ingresses(namespace string) IngressInterface {
 
 func (c *ExtensionsV1beta1Client) NetworkPolicies(namespace string) NetworkPolicyInterface {
 	return newNetworkPolicies(c, namespace)
+}
+
+func (c *ExtensionsV1beta1Client) PodSecurityPolicies() PodSecurityPolicyInterface {
+	return newPodSecurityPolicies(c)
 }
 
 func (c *ExtensionsV1beta1Client) ReplicaSets(namespace string) ReplicaSetInterface {
@@ -105,10 +110,10 @@ func New(c rest.Interface) *ExtensionsV1beta1Client {
 }
 
 func setConfigDefaults(config *rest.Config) error {
-	gv := extensionsv1beta1.SchemeGroupVersion
+	gv := v1beta1.SchemeGroupVersion
 	config.GroupVersion = &gv
 	config.APIPath = "/apis"
-	config.NegotiatedSerializer = rest.CodecFactoryForGeneratedClient(scheme.Scheme, scheme.Codecs).WithoutConversion()
+	config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
 
 	if config.UserAgent == "" {
 		config.UserAgent = rest.DefaultKubernetesUserAgent()

@@ -19,12 +19,12 @@ limitations under the License.
 package v1beta2
 
 import (
-	appsv1beta2 "k8s.io/api/apps/v1beta2"
+	v1beta2 "k8s.io/api/apps/v1beta2"
 	corev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// StatefulSetSpecApplyConfiguration represents a declarative configuration of the StatefulSetSpec type for use
+// StatefulSetSpecApplyConfiguration represents an declarative configuration of the StatefulSetSpec type for use
 // with apply.
 type StatefulSetSpecApplyConfiguration struct {
 	Replicas                             *int32                                                             `json:"replicas,omitempty"`
@@ -32,15 +32,14 @@ type StatefulSetSpecApplyConfiguration struct {
 	Template                             *corev1.PodTemplateSpecApplyConfiguration                          `json:"template,omitempty"`
 	VolumeClaimTemplates                 []corev1.PersistentVolumeClaimApplyConfiguration                   `json:"volumeClaimTemplates,omitempty"`
 	ServiceName                          *string                                                            `json:"serviceName,omitempty"`
-	PodManagementPolicy                  *appsv1beta2.PodManagementPolicyType                               `json:"podManagementPolicy,omitempty"`
+	PodManagementPolicy                  *v1beta2.PodManagementPolicyType                                   `json:"podManagementPolicy,omitempty"`
 	UpdateStrategy                       *StatefulSetUpdateStrategyApplyConfiguration                       `json:"updateStrategy,omitempty"`
 	RevisionHistoryLimit                 *int32                                                             `json:"revisionHistoryLimit,omitempty"`
 	MinReadySeconds                      *int32                                                             `json:"minReadySeconds,omitempty"`
 	PersistentVolumeClaimRetentionPolicy *StatefulSetPersistentVolumeClaimRetentionPolicyApplyConfiguration `json:"persistentVolumeClaimRetentionPolicy,omitempty"`
-	Ordinals                             *StatefulSetOrdinalsApplyConfiguration                             `json:"ordinals,omitempty"`
 }
 
-// StatefulSetSpecApplyConfiguration constructs a declarative configuration of the StatefulSetSpec type for use with
+// StatefulSetSpecApplyConfiguration constructs an declarative configuration of the StatefulSetSpec type for use with
 // apply.
 func StatefulSetSpec() *StatefulSetSpecApplyConfiguration {
 	return &StatefulSetSpecApplyConfiguration{}
@@ -94,7 +93,7 @@ func (b *StatefulSetSpecApplyConfiguration) WithServiceName(value string) *State
 // WithPodManagementPolicy sets the PodManagementPolicy field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the PodManagementPolicy field is set to the value of the last call.
-func (b *StatefulSetSpecApplyConfiguration) WithPodManagementPolicy(value appsv1beta2.PodManagementPolicyType) *StatefulSetSpecApplyConfiguration {
+func (b *StatefulSetSpecApplyConfiguration) WithPodManagementPolicy(value v1beta2.PodManagementPolicyType) *StatefulSetSpecApplyConfiguration {
 	b.PodManagementPolicy = &value
 	return b
 }
@@ -128,13 +127,5 @@ func (b *StatefulSetSpecApplyConfiguration) WithMinReadySeconds(value int32) *St
 // If called multiple times, the PersistentVolumeClaimRetentionPolicy field is set to the value of the last call.
 func (b *StatefulSetSpecApplyConfiguration) WithPersistentVolumeClaimRetentionPolicy(value *StatefulSetPersistentVolumeClaimRetentionPolicyApplyConfiguration) *StatefulSetSpecApplyConfiguration {
 	b.PersistentVolumeClaimRetentionPolicy = value
-	return b
-}
-
-// WithOrdinals sets the Ordinals field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Ordinals field is set to the value of the last call.
-func (b *StatefulSetSpecApplyConfiguration) WithOrdinals(value *StatefulSetOrdinalsApplyConfiguration) *StatefulSetSpecApplyConfiguration {
-	b.Ordinals = value
 	return b
 }

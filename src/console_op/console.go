@@ -28,7 +28,6 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -133,15 +132,15 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 
 	log.Printf("WEBSOCKET:: starting streamWithContext")
 	var stdin, stdout bytes.Buffer
-	ctx, cancel := context.WithCancel(context.Background())
-	err = executor.StreamWithContext(ctx, remotecommand.StreamOptions{
+	//ctx, cancel := context.WithCancel(context.Background())
+	err = executor.Stream(remotecommand.StreamOptions{
 		Stdin:  &stdin,
 		Stdout: &stdout,
 		Tty:    true,
 	})
 	if err != nil {
 		log.Printf("failed to execute command in pod: %v", err)
-		cancel()
+		//cancel()
 		return
 	}
 
@@ -190,7 +189,7 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 	log.Printf("WEBSOCKET:: Shutting down")
 
 	// shut down the context, then close the connection
-	cancel()
+	//cancel()
 	conn.Close()
 
 	log.Printf("WEBSOCKET:: Exiting websocket")
