@@ -40,6 +40,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/kubectl/pkg/scheme"
 )
@@ -104,7 +105,6 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 
 	// find which container is monitoring this node
 	podName, err := cs.dataService.getNodePodForXname(xname)
-	//pod, err := cs.k8s.getClientSet().CoreV1().Pods("services").Get(podName, metav1.GetOptions{})
 
 	// Build the command to be executed in the pod
 	cmd := []string{"sh"}
@@ -125,21 +125,24 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 		}, scheme.ParameterCodec)
 
 	log.Printf("WEBSOCKET:: creating executor")
+	config, err := rest.InClusterConfig()
 	executor, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
 	if err != nil {
-		return "", "", fmt.Errorf("failed to create executor: %v", err)
+		log.Printf("failed to create executor: %v", err)
 	}
 
 	log.Printf("WEBSOCKET:: starting streamWithContext")
 	var stdin, stdout bytes.Buffer
-	ctx, cancel := context.WithCancel(context.Background)
+	ctx, cancel := context.WithCancel(context.Background())
 	err = executor.StreamWithContext(ctx, remotecommand.StreamOptions{
 		Stdin:  &stdin,
 		Stdout: &stdout,
 		Tty:    true,
 	})
 	if err != nil {
-		return "", "", fmt.Errorf("failed to execute command in pod: %v", err)
+		log.Printf("failed to execute command in pod: %v", err)
+		cancel()
+		return
 	}
 
 	// take any output from the file and output to the websocket
@@ -180,33 +183,17 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 			break
 		}
 
-		log.Printf("  WEBSOCKET:: Received input line: %s", message)
-
 		// append to the file
+		log.Printf("  WEBSOCKET:: Received input line: %s", message)
 		stdin.Write(message)
-		inputFile.Sync()
 	}
+	log.Printf("WEBSOCKET:: Shutting down")
 
+	// shut down the context, then close the connection
+	cancel()
 	conn.Close()
-	log.Printf("WEBSOCKET:: Closed connection")
 
 	log.Printf("WEBSOCKET:: Exiting websocket")
-	// Forward input to the console
-	//for {
-	// Read message from the client
-	//	_, message, err := conn.ReadMessage()
-	//	if err != nil {
-	//		log.Println("Error reading message:", err)
-	//		break
-	//	}
-	//	fmt.Printf("Received: %s\\n", message)
-	//	// Echo the message back to the client
-	//	outMsg := []byte(fmt.Sprintf("%s: %s", xname, message))
-	//	if err := conn.WriteMessage(websocket.TextMessage, outMsg); err != nil {
-	//		log.Println("Error writing message:", err)
-	//		break
-	//	}
-	//}
 }
 
 // Finds and returns the node where the given pod is running within the k8s cluster.
