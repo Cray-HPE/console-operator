@@ -51,11 +51,11 @@ func setupRoutes(ds DataService, hs HealthService, dbs DebugService, cs ConsoleS
 	router.Get("/console-operator/getNodePod", ds.doGetNodePod)
 
 	// routes for finding information from the operator
-	router.Get("/console-operator/location/{podID}", ds.doGetPodLocation)
-	router.Get("/console-operator/replicas", ds.doGetPodReplicaCount)
-	router.Get("/console-operator/currentTargets", ds.doGetCurrentTargets)
+	router.Get("/console-operator/v1/location/{podID}", ds.doGetPodLocation)
+	router.Get("/console-operator/v1/replicas", ds.doGetPodReplicaCount)
+	router.Get("/console-operator/v1/currentTargets", ds.doGetCurrentTargets)
 
 	// routes for interacting with consoles
-	router.Get("/console-operator/follow/{nodeXname}", cs.doFollowConsole)
-	router.Get("/console-operator/interact/{nodeXname}", cs.doInteractConsole)
+	router.Get("/console-operator/v1/follow/{nodeXname}", cs.doFollowConsole)
+	router.Get("/console-operator/v1/interact/{nodeXname}", cs.doInteractConsole)
 }
