@@ -106,7 +106,7 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 	podName, err := cs.dataService.getNodePodForXname(xname)
 
 	// Build the command to be executed in the pod
-	cmd := []string{"sh"}
+	cmd := []string{"sh", "conman", "-j", xname}
 
 	// Execute the command in the pod
 	log.Printf("WEBSOCKET:: creating request")
@@ -131,19 +131,8 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 		log.Printf("failed to create executor: %v", err)
 	}
 
-	log.Printf("WEBSOCKET:: starting streamWithContext")
+	// define the I/O buffers
 	var stdin, stdout bytes.Buffer
-	//ctx, cancel := context.WithCancel(context.Background())
-	err = executor.Stream(remotecommand.StreamOptions{
-		Stdin:  &stdin,
-		Stdout: &stdout,
-		Tty:    true,
-	})
-	if err != nil {
-		log.Printf("failed to execute command in pod: %v", err)
-		//cancel()
-		return
-	}
 
 	// take any output from the file and output to the websocket
 	log.Printf("WEBSOCKET:: Starting piping output")
@@ -173,20 +162,40 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 	}()
 
 	log.Printf("WEBSOCKET:: Starting input handler")
-	// append input lines to the file
-	log.Printf("WEBSOCKET:: Starting read loop")
-	for {
-		//get the next input line
-		_, message, err := conn.ReadMessage()
-		if err != nil {
-			log.Println("Error reading message:", err)
-			break
-		}
+	go func() {
+		defer func() {
+			log.Printf("WEBSOCKET:: exiting input handler thread")
+		}()
 
-		// append to the file
-		log.Printf("  WEBSOCKET:: Received input line: %s", message)
-		stdin.Write(message)
+		// append input lines to the file
+		log.Printf("WEBSOCKET:: Starting read loop")
+		for {
+			//get the next input line
+			_, message, err := conn.ReadMessage()
+			if err != nil {
+				log.Println("Error reading message:", err)
+				break
+			}
+
+			// append to the file
+			log.Printf("  WEBSOCKET:: Received input line: %s", message)
+			stdin.Write(message)
+		}
+	}()
+
+	log.Printf("WEBSOCKET:: starting streamWithContext")
+	//ctx, cancel := context.WithCancel(context.Background())
+	err = executor.Stream(remotecommand.StreamOptions{
+		Stdin:  &stdin,
+		Stdout: &stdout,
+		Tty:    true,
+	})
+	if err != nil {
+		log.Printf("failed to execute command in pod: %v", err)
+		//cancel()
+		return
 	}
+
 	log.Printf("WEBSOCKET:: Shutting down")
 
 	// shut down the context, then close the connection
