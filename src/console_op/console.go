@@ -147,14 +147,14 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 			// pull in the next line of input from the user
 			line, err := stdout.ReadString('\n')
 			if err != nil {
-				log.Println("Error Reading stdout message")
+				log.Printf("Error Reading stdout message: %v", err)
 				break
 			}
 			log.Printf("  WEBSOCKET:: Read line: %s", line)
 			if line != "" {
 				outMsg := []byte(fmt.Sprintf("%s: %s", xname, line))
 				if err := conn.WriteMessage(websocket.TextMessage, outMsg); err != nil {
-					log.Println("Error writing message to websocket:", err)
+					log.Printf("Error writing message to websocket: %v", err)
 					break
 				}
 			}
@@ -173,7 +173,7 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 			//get the next input line
 			_, message, err := conn.ReadMessage()
 			if err != nil {
-				log.Println("Error reading message:", err)
+				log.Printf("Error reading message %v", err)
 				break
 			}
 
