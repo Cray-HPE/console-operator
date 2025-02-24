@@ -259,9 +259,17 @@ func (K8Manager) updateNodesPerPod(newNumMtn, newNumRvr int) {
 
 // Find and return where the current pod is running in k8s
 func (k8s K8Manager) getPodLocationAlias(podID string) (loc string, err error) {
-	pod, err := k8s.clientset.CoreV1().Pods("services").Get(context.TODO(), podID, metav1.GetOptions{})
+	log.Printf("getPodLocationAlias: %s", podID)
+	corev1 := k8s.clientset.CoreV1()
+	log.Printf("  corev1: %v\n", corev1)
+	pods := corev1.Pods("services")
+	log.Printf("  pods: %v\n", pods)
+	pod, err := pods.Get(context.TODO(), podID, metav1.GetOptions{})
+	log.Printf("  pod: %v\n", pod)
+
+	//pod, err := k8s.clientset.CoreV1().Pods("services").Get(context.TODO(), podID, metav1.GetOptions{})
 	if err != nil {
-		log.Printf("Error: Unable to find the node for pod %s, %s", podID, err)
+		log.Printf("Error: getPodLocationAlias: Unable to find the node for pod %s, %s", podID, err)
 		return "", err
 	}
 

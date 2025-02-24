@@ -36,6 +36,10 @@ require (
 	k8s.io/kubectl v0.24.17
 )
 
+// NOTE:
+// 	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f // indirect
+//  This is set explicitly to this version to work around a build issue as
+//  documented here: https://github.com/kubernetes/client-go/issues/1313
 require (
 	cloud.google.com/go/compute/metadata v0.6.0 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
