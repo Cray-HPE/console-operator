@@ -116,11 +116,12 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 		Namespace("services").
 		SubResource("exec").
 		VersionedParams(&v1.PodExecOptions{
-			Command: cmd,
-			Stdin:   true,
-			Stdout:  true,
-			Stderr:  true,
-			TTY:     true,
+			Command:   cmd,
+			Container: "cray-console-node",
+			Stdin:     true,
+			Stdout:    true,
+			Stderr:    true,
+			TTY:       true,
 		}, scheme.ParameterCodec)
 
 	log.Printf("WEBSOCKET:: creating executor")
