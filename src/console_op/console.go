@@ -106,7 +106,8 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 	podName, err := cs.dataService.getNodePodForXname(xname)
 
 	// Build the command to be executed in the pod
-	cmd := []string{"sh", "conman", "-j", xname}
+	//cmd := []string{"sh", "conman", "-j", xname}
+	cmd := []string{"conman", "-j", xname}
 
 	// Execute the command in the pod
 	log.Printf("WEBSOCKET:: creating request")
@@ -135,26 +136,26 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 	var stdin, stdout bytes.Buffer
 
 	// take any output from the file and output to the websocket
-	log.Printf("WEBSOCKET:: Starting piping output")
+	log.Printf("WEBSOCKET:: NODE->SOCKET Starting piping output")
 	go func() {
 		// Log when this thread goes away
 		defer func() {
-			log.Printf("WEBSOCKET:: exiting tailing thread")
+			log.Printf("WEBSOCKET:: NODE->SOCKET exiting tailing thread")
 		}()
 
-		log.Printf("WEBSOCKET:: Starting output loop")
+		log.Printf("WEBSOCKET:: NODE->SOCKET Starting output loop")
 		for {
 			// pull in the next line of input from the user
 			line, err := stdout.ReadString('\n')
 			if err != nil {
-				log.Printf("Error Reading stdout message: %v", err)
+				log.Printf("  WEBSOCKET:: NODE->SOCKET Error Reading stdout message: %v", err)
 				break
 			}
-			log.Printf("  WEBSOCKET:: Read line: %s", line)
+			log.Printf("  WEBSOCKET:: NODE->SOCKET Read line: %s", line)
 			if line != "" {
 				outMsg := []byte(fmt.Sprintf("%s: %s", xname, line))
 				if err := conn.WriteMessage(websocket.TextMessage, outMsg); err != nil {
-					log.Printf("Error writing message to websocket: %v", err)
+					log.Printf("  WEBSOCKET:: NODE->SOCKET Error writing message to websocket: %v", err)
 					break
 				}
 			}
@@ -164,26 +165,31 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 	log.Printf("WEBSOCKET:: Starting input handler")
 	go func() {
 		defer func() {
-			log.Printf("WEBSOCKET:: exiting input handler thread")
+			log.Printf("WEBSOCKET:: USER->NODE exiting input handler thread")
 		}()
 
 		// append input lines to the file
-		log.Printf("WEBSOCKET:: Starting read loop")
+		log.Printf("WEBSOCKET:: USER->NODE Starting read loop")
 		for {
 			//get the next input line
 			_, message, err := conn.ReadMessage()
 			if err != nil {
-				log.Printf("Error reading message %v", err)
+				log.Printf("  WEBSOCKET:: USER->NODE Error reading input message %v", err)
 				break
 			}
 
 			// append to the file
-			log.Printf("  WEBSOCKET:: Received input line: %s", message)
-			stdin.Write(message)
+			log.Printf("  WEBSOCKET:: USER->NODE Received input line: %s", message)
+			n, err := stdin.Write(message)
+			if err != nil {
+				log.Printf("  WEBSOCKET:: USER->NODE error writing to pod stream: %v", err)
+			} else {
+				log.Printf("  WEBSOCKET:: USER->NODE wrote %d bytes to pod stream.", n)
+			}
 		}
 	}()
 
-	log.Printf("WEBSOCKET:: starting streamWithContext")
+	log.Printf("WEBSOCKET:: starting command stream")
 	//ctx, cancel := context.WithCancel(context.Background())
 	err = executor.Stream(remotecommand.StreamOptions{
 		Stdin:  &stdin,
@@ -191,7 +197,7 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 		Tty:    true,
 	})
 	if err != nil {
-		log.Printf("failed to execute command in pod: %v", err)
+		log.Printf("WEBSOCKET:: failed to execute command in pod: %v", err)
 		//cancel()
 		return
 	}
