@@ -180,7 +180,7 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 	log.Printf("WEBSOCKET:: NODE->SOCKET Starting output loop")
 	for {
 		// pull in the next line of input from the user
-		line, err := stdout.R
+		line, err := stdout.ReadString('\n')
 		if err != nil {
 			log.Printf("  WEBSOCKET:: NODE->SOCKET Error Reading stdout message: %v", err)
 			break
