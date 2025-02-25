@@ -165,9 +165,10 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 	log.Printf("WEBSOCKET:: starting command stream")
 	//ctx, cancel := context.WithCancel(context.Background())
 	err = executor.Stream(remotecommand.StreamOptions{
-		Stdin:  &stdin,
+		//Stdin:  &stdin,
 		Stdout: &stdout,
-		Tty:    true,
+		Tty:    false,
+		//Tty:    true,
 	})
 	if err != nil {
 		log.Printf("WEBSOCKET:: failed to execute command in pod: %v", err)
@@ -179,7 +180,7 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 	log.Printf("WEBSOCKET:: NODE->SOCKET Starting output loop")
 	for {
 		// pull in the next line of input from the user
-		line, err := stdout.ReadString('\n')
+		line, err := stdout.R
 		if err != nil {
 			log.Printf("  WEBSOCKET:: NODE->SOCKET Error Reading stdout message: %v", err)
 			break
