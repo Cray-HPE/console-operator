@@ -106,8 +106,8 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 	podName, err := cs.dataService.getNodePodForXname(xname)
 
 	// Build the command to be executed in the pod
-	//cmd := []string{"sh", "conman", "-j", xname}
-	cmd := []string{"conman", "-j", xname}
+	//cmd := []string{"conman", "-j", xname}
+	cmd := []string{"ls", "-la", "/var/log/conman"}
 
 	// Execute the command in the pod
 	log.Printf("WEBSOCKET:: creating request")
