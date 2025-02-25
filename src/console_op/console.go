@@ -135,33 +135,6 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 	// define the I/O buffers
 	var stdin, stdout bytes.Buffer
 
-	// take any output from the file and output to the websocket
-	log.Printf("WEBSOCKET:: NODE->SOCKET Starting piping output")
-	go func() {
-		// Log when this thread goes away
-		defer func() {
-			log.Printf("WEBSOCKET:: NODE->SOCKET exiting tailing thread")
-		}()
-
-		log.Printf("WEBSOCKET:: NODE->SOCKET Starting output loop")
-		for {
-			// pull in the next line of input from the user
-			line, err := stdout.ReadString('\n')
-			if err != nil {
-				log.Printf("  WEBSOCKET:: NODE->SOCKET Error Reading stdout message: %v", err)
-				break
-			}
-			log.Printf("  WEBSOCKET:: NODE->SOCKET Read line: %s", line)
-			if line != "" {
-				outMsg := []byte(fmt.Sprintf("%s: %s", xname, line))
-				if err := conn.WriteMessage(websocket.TextMessage, outMsg); err != nil {
-					log.Printf("  WEBSOCKET:: NODE->SOCKET Error writing message to websocket: %v", err)
-					break
-				}
-			}
-		}
-	}()
-
 	log.Printf("WEBSOCKET:: Starting input handler")
 	go func() {
 		defer func() {
@@ -200,6 +173,25 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 		log.Printf("WEBSOCKET:: failed to execute command in pod: %v", err)
 		//cancel()
 		return
+	}
+
+	// take any output from the file and output to the websocket
+	log.Printf("WEBSOCKET:: NODE->SOCKET Starting output loop")
+	for {
+		// pull in the next line of input from the user
+		line, err := stdout.ReadString('\n')
+		if err != nil {
+			log.Printf("  WEBSOCKET:: NODE->SOCKET Error Reading stdout message: %v", err)
+			break
+		}
+		log.Printf("  WEBSOCKET:: NODE->SOCKET Read line: %s", line)
+		if line != "" {
+			outMsg := []byte(fmt.Sprintf("%s: %s", xname, line))
+			if err := conn.WriteMessage(websocket.TextMessage, outMsg); err != nil {
+				log.Printf("  WEBSOCKET:: NODE->SOCKET Error writing message to websocket: %v", err)
+				break
+			}
+		}
 	}
 
 	log.Printf("WEBSOCKET:: Shutting down")
