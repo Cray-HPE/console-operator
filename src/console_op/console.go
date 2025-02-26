@@ -31,6 +31,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"sync"
 
@@ -226,6 +227,22 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 	log.Printf("WEBSOCKET:: Exiting websocket")
 }
 
+type OutputStreamer struct {
+	b bytes.Buffer
+	s string
+}
+
+func (l *OutputStreamer) String() string {
+	return l.b.String()
+}
+
+func (l *OutputStreamer) Write(p []byte) (n int, err error) {
+	a := strings.TrimSpace(string(p))
+	l.b.WriteString(a)
+	log.Printf("%s: %s", l.s, a)
+	return len(p), nil
+}
+
 // Finds and returns the node where the given pod is running within the k8s cluster.
 func (cs ConsoleManager) doFollowConsole(w http.ResponseWriter, r *http.Request) {
 	// only allow 'GET' calls
@@ -246,6 +263,67 @@ func (cs ConsoleManager) doFollowConsole(w http.ResponseWriter, r *http.Request)
 		SendResponseJSON(w, http.StatusBadRequest, body)
 		return
 	}
+
+	// find which container is monitoring this node
+	podName, err := cs.dataService.getNodePodForXname(xname)
+
+	// upgrade https to secure websocket connection
+	//conn, err := upgrader.Upgrade(w, r, nil)
+	//if err != nil {
+	//fmt.Println("Error upgrading:", err)
+	//return
+	//}
+	defer func() {
+		log.Printf("WEBSOCKET:: Doing deferred close")
+	}()
+
+	// Build the command to be executed in the pod
+	//cmd := []string{"conman", "-j", xname}
+	cmd := []string{"ls", "-la", "/var/log/conman"}
+
+	// Execute the command in the pod
+	log.Printf("WEBSOCKET:: creating request")
+	req := cs.k8s.getClientSet().CoreV1().RESTClient().Post().
+		Resource("pods").
+		Name(podName).
+		Namespace("services").
+		SubResource("exec").
+		VersionedParams(&v1.PodExecOptions{
+			Command:   cmd,
+			Container: "cray-console-node",
+			Stdin:     false,
+			Stdout:    true,
+			Stderr:    true,
+			TTY:       false,
+		}, scheme.ParameterCodec)
+
+	log.Printf("WEBSOCKET:: creating executor")
+	config, err := rest.InClusterConfig()
+	executor, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
+	if err != nil {
+		log.Printf("failed to create executor: %v", err)
+	}
+
+	o := &OutputStreamer{}
+	o.s = "stdOut"
+	e := &OutputStreamer{}
+	e.s = "stdErr"
+
+	log.Printf("WEBSOCKET:: starting command stream")
+	//ctx, cancel := context.WithCancel(context.Background())
+	err = executor.Stream(remotecommand.StreamOptions{
+		Stdin:  nil,
+		Stdout: o,
+		Stderr: e,
+		Tty:    false,
+	})
+	if err != nil {
+		log.Printf("WEBSOCKET:: failed to execute command in pod: %v", err)
+		//cancel()
+		return
+	}
+
+	log.Printf("WEBSOCKET:: completed command stream")
 
 	// 200 ok
 	SendResponseJSON(w, http.StatusOK, nil)
