@@ -133,7 +133,7 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 	}
 
 	// define the I/O buffers
-	var stdin, stdout bytes.Buffer
+	var stdin, stdout, stderr bytes.Buffer
 
 	log.Printf("WEBSOCKET:: Starting input handler")
 	go func() {
@@ -165,8 +165,9 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 	log.Printf("WEBSOCKET:: starting command stream")
 	//ctx, cancel := context.WithCancel(context.Background())
 	err = executor.Stream(remotecommand.StreamOptions{
-		//Stdin:  &stdin,
+		Stdin:  &stdin,
 		Stdout: &stdout,
+		Stderr: &stderr,
 		Tty:    false,
 		//Tty:    true,
 	})
@@ -175,6 +176,27 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 		//cancel()
 		return
 	}
+
+	// take any output from the file and output to the websocket
+	log.Printf("WEBSOCKET:: NODE->SOCKET Starting error loop")
+	go func() {
+		for {
+			// pull in the next line of input from the user
+			line, err := stderr.ReadString('\n')
+			if err != nil {
+				log.Printf("  WEBSOCKET:: NODE->SOCKET stderr Error Reading stdout message: %v", err)
+				break
+			}
+			log.Printf("  WEBSOCKET:: NODE->SOCKET stderr Read line: %s", line)
+			if line != "" {
+				outMsg := []byte(fmt.Sprintf("%s: %s", xname, line))
+				if err := conn.WriteMessage(websocket.TextMessage, outMsg); err != nil {
+					log.Printf("  WEBSOCKET:: NODE->SOCKET stderr Error writing message to websocket: %v", err)
+					break
+				}
+			}
+		}
+	}()
 
 	// take any output from the file and output to the websocket
 	log.Printf("WEBSOCKET:: NODE->SOCKET Starting output loop")
