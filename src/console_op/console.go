@@ -31,7 +31,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
 
 	"sync"
 
@@ -72,6 +71,21 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+// OutputStreamer - handle the output stream to the websocket
+type OutputStreamer struct {
+	conn *websocket.Conn
+}
+
+func (l *OutputStreamer) String() string {
+	// we only care about streaming to the websocket connection - stub this out
+	return ""
+}
+
+func (l *OutputStreamer) Write(p []byte) (n int, err error) {
+	l.conn.WriteMessage(websocket.TextMessage, p)
+	return len(p), nil
+}
+
 // Finds and returns the node where the given pod is running within the k8s cluster.
 func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Request) {
 	// only allow 'GET' calls
@@ -107,8 +121,8 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 	podName, err := cs.dataService.getNodePodForXname(xname)
 
 	// Build the command to be executed in the pod
-	//cmd := []string{"conman", "-j", xname}
-	cmd := []string{"ls", "-la", "/var/log/conman"}
+	cmd := []string{"conman", "-j", xname}
+	//cmd := []string{"ls", "-la", "/var/log/conman"}
 
 	// Execute the command in the pod
 	log.Printf("WEBSOCKET:: creating request")
@@ -122,8 +136,8 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 			Container: "cray-console-node",
 			Stdin:     true,
 			Stdout:    true,
-			Stderr:    true,
-			TTY:       false,
+			Stderr:    false,
+			TTY:       true,
 		}, scheme.ParameterCodec)
 
 	log.Printf("WEBSOCKET:: creating executor")
@@ -134,7 +148,7 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 	}
 
 	// define the I/O buffers
-	var stdin, stdout, stderr bytes.Buffer
+	var stdin bytes.Buffer
 
 	log.Printf("WEBSOCKET:: Starting input handler")
 	go func() {
@@ -163,59 +177,22 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 		}
 	}()
 
+	o := &OutputStreamer{}
+	o.conn = conn
+
 	log.Printf("WEBSOCKET:: starting command stream")
 	//ctx, cancel := context.WithCancel(context.Background())
 	err = executor.Stream(remotecommand.StreamOptions{
 		Stdin:  &stdin,
-		Stdout: &stdout,
-		Stderr: &stderr,
-		Tty:    false,
+		Stdout: o,
+		Stderr: nil,
+		Tty:    true,
 		//Tty:    true,
 	})
 	if err != nil {
 		log.Printf("WEBSOCKET:: failed to execute command in pod: %v", err)
 		//cancel()
 		return
-	}
-
-	// take any output from the file and output to the websocket
-	log.Printf("WEBSOCKET:: NODE->SOCKET Starting error loop")
-	go func() {
-		for {
-			// pull in the next line of input from the user
-			line, err := stderr.ReadString('\n')
-			if err != nil {
-				log.Printf("  WEBSOCKET:: NODE->SOCKET stderr Error Reading stdout message: %v", err)
-				break
-			}
-			log.Printf("  WEBSOCKET:: NODE->SOCKET stderr Read line: %s", line)
-			if line != "" {
-				outMsg := []byte(fmt.Sprintf("%s: %s", xname, line))
-				if err := conn.WriteMessage(websocket.TextMessage, outMsg); err != nil {
-					log.Printf("  WEBSOCKET:: NODE->SOCKET stderr Error writing message to websocket: %v", err)
-					break
-				}
-			}
-		}
-	}()
-
-	// take any output from the file and output to the websocket
-	log.Printf("WEBSOCKET:: NODE->SOCKET Starting output loop")
-	for {
-		// pull in the next line of input from the user
-		line, err := stdout.ReadString('\n')
-		if err != nil {
-			log.Printf("  WEBSOCKET:: NODE->SOCKET Error Reading stdout message: %v", err)
-			break
-		}
-		log.Printf("  WEBSOCKET:: NODE->SOCKET Read line: %s", line)
-		if line != "" {
-			outMsg := []byte(fmt.Sprintf("%s: %s", xname, line))
-			if err := conn.WriteMessage(websocket.TextMessage, outMsg); err != nil {
-				log.Printf("  WEBSOCKET:: NODE->SOCKET Error writing message to websocket: %v", err)
-				break
-			}
-		}
 	}
 
 	log.Printf("WEBSOCKET:: Shutting down")
@@ -225,24 +202,6 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 	conn.Close()
 
 	log.Printf("WEBSOCKET:: Exiting websocket")
-}
-
-type OutputStreamer struct {
-	b    bytes.Buffer
-	s    string
-	conn *websocket.Conn
-}
-
-func (l *OutputStreamer) String() string {
-	return l.b.String()
-}
-
-func (l *OutputStreamer) Write(p []byte) (n int, err error) {
-	a := strings.TrimSpace(string(p))
-	l.b.WriteString(a)
-	log.Printf("%s: %s", l.s, a)
-	l.conn.WriteMessage(websocket.TextMessage, p)
-	return len(p), nil
 }
 
 // Finds and returns the node where the given pod is running within the k8s cluster.
@@ -281,7 +240,7 @@ func (cs ConsoleManager) doFollowConsole(w http.ResponseWriter, r *http.Request)
 
 	// Build the command to be executed in the pod
 	//cmd := []string{"conman", "-j", xname}
-	cmd := []string{"ls", "-la", "/var/log/conman", "*x3*"}
+	cmd := []string{"ls", "-la", "/var/log/conman/*x3*"}
 
 	// Execute the command in the pod
 	log.Printf("WEBSOCKET:: creating request")
@@ -307,10 +266,8 @@ func (cs ConsoleManager) doFollowConsole(w http.ResponseWriter, r *http.Request)
 	}
 
 	o := &OutputStreamer{}
-	o.s = "stdOut"
 	o.conn = conn
 	e := &OutputStreamer{}
-	e.s = "stdErr"
 	e.conn = conn
 
 	log.Printf("WEBSOCKET:: starting command stream")
