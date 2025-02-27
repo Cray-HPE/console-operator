@@ -228,8 +228,9 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 }
 
 type OutputStreamer struct {
-	b bytes.Buffer
-	s string
+	b    bytes.Buffer
+	s    string
+	conn *websocket.Conn
 }
 
 func (l *OutputStreamer) String() string {
@@ -240,6 +241,7 @@ func (l *OutputStreamer) Write(p []byte) (n int, err error) {
 	a := strings.TrimSpace(string(p))
 	l.b.WriteString(a)
 	log.Printf("%s: %s", l.s, a)
+	l.conn.WriteMessage(websocket.TextMessage, p)
 	return len(p), nil
 }
 
@@ -268,18 +270,18 @@ func (cs ConsoleManager) doFollowConsole(w http.ResponseWriter, r *http.Request)
 	podName, err := cs.dataService.getNodePodForXname(xname)
 
 	// upgrade https to secure websocket connection
-	//conn, err := upgrader.Upgrade(w, r, nil)
-	//if err != nil {
-	//fmt.Println("Error upgrading:", err)
-	//return
-	//}
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		fmt.Println("Error upgrading:", err)
+		return
+	}
 	defer func() {
 		log.Printf("WEBSOCKET:: Doing deferred close")
 	}()
 
 	// Build the command to be executed in the pod
 	//cmd := []string{"conman", "-j", xname}
-	cmd := []string{"ls", "-la", "/var/log/conman"}
+	cmd := []string{"ls", "-la", "/var/log/conman", "*x3*"}
 
 	// Execute the command in the pod
 	log.Printf("WEBSOCKET:: creating request")
@@ -306,8 +308,10 @@ func (cs ConsoleManager) doFollowConsole(w http.ResponseWriter, r *http.Request)
 
 	o := &OutputStreamer{}
 	o.s = "stdOut"
+	o.conn = conn
 	e := &OutputStreamer{}
 	e.s = "stdErr"
+	e.conn = conn
 
 	log.Printf("WEBSOCKET:: starting command stream")
 	//ctx, cancel := context.WithCancel(context.Background())
