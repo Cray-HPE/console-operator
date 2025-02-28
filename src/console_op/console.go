@@ -28,9 +28,9 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
-
 	"sync"
 
 	"github.com/go-chi/chi/v5"
@@ -68,6 +68,34 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
+}
+
+// InputStreamer - handle the input stream from the websocket
+type InputStreamer struct {
+	conn   *websocket.Conn
+	reader io.Reader
+}
+
+func (l *InputStreamer) Read(p []byte) (n int, err error) {
+	if l.reader == nil {
+	}
+	n, err = l.reader.Read(p)
+	log.Printf(" Reading from : %d, %b", n, p)
+	return n, err
+}
+
+// NewInputStreamer - make a new input streamer based on this websocket
+func NewInputStreamer(conn *websocket.Conn) InputStreamer {
+	log.Print("WEBSOCKET:: Making InputStreamer")
+	var l InputStreamer
+	l.conn = conn
+	readType, connReader, err := l.conn.NextReader()
+	log.Printf("WEBSOCKET:: Connection Reader Type: %d", readType)
+	if err != nil {
+		log.Printf("WEBSOCKET:: Error getting next reader: %v", err)
+	}
+	l.reader = connReader
+	return l
 }
 
 // OutputStreamer - handle the output stream to the websocket
@@ -179,17 +207,18 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 	o := &OutputStreamer{}
 	o.conn = conn
 
-	readType, connReader, err := conn.NextReader()
-	log.Printf("WEBSOCKET:: Connection Reader Type: %d", readType)
-	if err != nil {
-		log.Printf("WEBSOCKET:: Error getting next reader: %v", err)
-		conn.Close()
-		return
-	}
-	log.Printf("WEBSOCKET:: starting command stream")
+	l := NewInputStreamer(conn)
+	//readType, connReader, err := conn.NextReader()
+	//log.Printf("WEBSOCKET:: Connection Reader Type: %d", readType)
+	//if err != nil {
+	//	log.Printf("WEBSOCKET:: Error getting next reader: %v", err)
+	//	conn.Close()
+	//	return
+	//}
 
+	log.Printf("WEBSOCKET:: starting command stream")
 	err = executor.Stream(remotecommand.StreamOptions{
-		Stdin:  connReader,
+		Stdin:  &l,
 		Stdout: o,
 		Stderr: nil,
 		Tty:    true,
