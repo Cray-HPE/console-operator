@@ -27,7 +27,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"log"
 	"net/http"
@@ -148,42 +147,49 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 	}
 
 	// define the I/O buffers
-	var stdin bytes.Buffer
+	//var stdin bytes.Buffer
 
-	log.Printf("WEBSOCKET:: Starting input handler")
-	go func() {
-		defer func() {
-			log.Printf("WEBSOCKET:: USER->NODE exiting input handler thread")
-		}()
+	//log.Printf("WEBSOCKET:: Starting input handler")
+	//go func() {
+	//	defer func() {
+	//		log.Printf("WEBSOCKET:: USER->NODE exiting input handler thread")
+	//	}()
 
-		// append input lines to the file
-		log.Printf("WEBSOCKET:: USER->NODE Starting read loop")
-		for {
-			//get the next input line
-			_, message, err := conn.ReadMessage()
-			if err != nil {
-				log.Printf("  WEBSOCKET:: USER->NODE Error reading input message %v", err)
-				break
-			}
+	//	// append input lines to the file
+	//	log.Printf("WEBSOCKET:: USER->NODE Starting read loop")
+	//	for {
+	//		//get the next input line
+	//		_, message, err := conn.ReadMessage()
+	//		if err != nil {
+	//			log.Printf("  WEBSOCKET:: USER->NODE Error reading input message %v", err)
+	//			break
+	//		}
 
-			// append to the file
-			log.Printf("  WEBSOCKET:: USER->NODE Received input line: %s", message)
-			n, err := stdin.Write(message)
-			if err != nil {
-				log.Printf("  WEBSOCKET:: USER->NODE error writing to pod stream: %v", err)
-			} else {
-				log.Printf("  WEBSOCKET:: USER->NODE wrote %d bytes to pod stream.", n)
-			}
-		}
-	}()
+	//		// append to the file
+	//		log.Printf("  WEBSOCKET:: USER->NODE Received input line: %s", message)
+	//		n, err := stdin.Write(message)
+	//		if err != nil {
+	//			log.Printf("  WEBSOCKET:: USER->NODE error writing to pod stream: %v", err)
+	//		} else {
+	//			log.Printf("  WEBSOCKET:: USER->NODE wrote %d bytes to pod stream.", n)
+	//		}
+	//	}
+	//}()
 
 	o := &OutputStreamer{}
 	o.conn = conn
 
+	readType, connReader, err := conn.NextReader()
+	log.Printf("WEBSOCKET:: Connection Reader Type: %d", readType)
+	if err != nil {
+		log.Printf("WEBSOCKET:: Error getting next reader: %v", err)
+		conn.Close()
+		return
+	}
 	log.Printf("WEBSOCKET:: starting command stream")
-	//ctx, cancel := context.WithCancel(context.Background())
+
 	err = executor.Stream(remotecommand.StreamOptions{
-		Stdin:  &stdin,
+		Stdin:  connReader,
 		Stdout: o,
 		Stderr: nil,
 		Tty:    true,
