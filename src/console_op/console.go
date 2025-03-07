@@ -181,7 +181,7 @@ func (l *IOStreamer) Write(p []byte) (n int, err error) {
 		if !found {
 			log.Print("WEBSOCKET::Writing: CRLF not found")
 			// end of input string - set up for next time
-			if bytes.ContainsRune(before, '#') {
+			if bytes.ContainsRune(before, '#') || bytes.ContainsRune(before, ':') {
 				// probably a command prompt - write it
 				err = l.writeMessage(before)
 				if err != nil {
