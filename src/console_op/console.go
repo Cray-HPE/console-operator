@@ -31,6 +31,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/websocket"
@@ -70,6 +71,43 @@ var upgrader = websocket.Upgrader{
 type IOStreamer struct {
 	conn          *websocket.Conn
 	writeFragment []byte
+	mu            sync.Mutex
+	inputStrings  [][]byte
+}
+
+func (l *IOStreamer) addInputString(msg []byte) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.inputStrings = append(l.inputStrings, msg)
+}
+
+func (l *IOStreamer) removeInputStrings(msg []byte) []byte {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	// find all input strings in msg and remove them
+	retVal := bytes.Clone(msg)
+	for i, inStr := range l.inputStrings {
+		beforeStr, afterStr, found := bytes.Cut(retVal, inStr)
+		if found {
+			// remove the element from the input strings
+			l.inputStrings = append(l.inputStrings[:i], l.inputStrings[i+1:]...)
+
+			// concatenate the before and after bits
+			if len(beforeStr) > 0 && len(afterStr) > 0 {
+				retVal = append(beforeStr, afterStr...)
+			} else if len(beforeStr) > 0 {
+				retVal = bytes.Clone(beforeStr)
+			} else if len(afterStr) > 0 {
+				retVal = bytes.Clone(afterStr)
+			} else {
+				// nothing left
+				return nil
+			}
+		}
+	}
+
+	return retVal
 }
 
 func (l *IOStreamer) Read(p []byte) (n int, err error) {
@@ -110,9 +148,6 @@ func (l *IOStreamer) Write(p []byte) (n int, err error) {
 	// Write must return a non-nil error if it returns n < len(p).
 	// Write must not modify the slice data, even temporarily.
 
-	//msg := string(p) + "\n"
-	//l.conn.WriteMessage(websocket.TextMessage, []byte(msg))
-	//return len(msg), nil
 	n = len(p)
 
 	log.Printf("WEBSOCKET::Writing: input len %d", n)
@@ -121,13 +156,17 @@ func (l *IOStreamer) Write(p []byte) (n int, err error) {
 	// if the ending portion is not and EOL, save for the next read
 
 	// tack on the last remnant if this is one
-	inStr := p
+	inStr := bytes.Clone(p)
 	if l.writeFragment != nil {
 		log.Printf("WEBSOCKET::Writing: appending fragment %s", string(l.writeFragment))
 		inStr = append(l.writeFragment, inStr...)
 		l.writeFragment = nil
 	}
 
+	// remove any input commands so they don't print twice in the output
+	inStr = l.removeInputStrings(inStr)
+
+	// Process the remaining strings
 	for len(inStr) > 0 {
 		// split at the first CR/LF found
 		before, after, found := bytes.Cut(inStr, []byte{13, 10})
