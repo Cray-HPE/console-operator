@@ -118,8 +118,10 @@ func (l *IOStreamer) Read(p []byte) (n int, err error) {
 		return 0, err
 	}
 	n, err = connReader.Read(p)
-	log.Printf(" WEBSOCKET::Reading: %d, ::%s::", n, p[:n])
-	log.Printf(" WEBSOCKET::Reading: %d, ::%d::", n, p[:n])
+	l.addInputString(p)
+	log.Printf(" WEBSOCKET::Reading: n:%d, len(p):%d", n, len(p))
+	//log.Printf(" WEBSOCKET::Reading: %d, ::%s::", n, p[:n])
+	//log.Printf(" WEBSOCKET::Reading: %d, ::%d::", n, p[:n])
 	return n, err
 }
 
