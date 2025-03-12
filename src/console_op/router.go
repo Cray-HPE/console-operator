@@ -1,7 +1,7 @@
 //
 //  MIT License
 //
-//  (C) Copyright 2023 Hewlett Packard Enterprise Development LP
+//  (C) Copyright 2023, 2025 Hewlett Packard Enterprise Development LP
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -36,7 +36,7 @@ import (
 
 var router = chi.NewRouter()
 
-func setupRoutes(ds DataService, hs HealthService, dbs DebugService) {
+func setupRoutes(ds DataService, hs HealthService, dbs DebugService, cs ConsoleService) {
 	// k8s routes
 	router.Get("/console-operator/liveness", hs.doLiveness)
 	router.Get("/console-operator/readiness", hs.doReadiness)
@@ -47,11 +47,15 @@ func setupRoutes(ds DataService, hs HealthService, dbs DebugService) {
 	router.Delete("/console-operator/clearData", dbs.doClearData)
 	router.Post("/console-operator/suspend", dbs.doSuspend)
 	router.Post("/console-operator/resume", dbs.doResume)
-	router.Patch("/console-operator/v0/setMaxNodesPerPod", dbs.doSetMaxNodesPerPod)
-	router.Get("/console-operator/v0/getNodePod", ds.doGetNodePod)
+	router.Patch("/console-operator/setMaxNodesPerPod", dbs.doSetMaxNodesPerPod)
+	router.Get("/console-operator/getNodePod", ds.doGetNodePod)
 
-	// v1
-	router.Get("/console-operator/v1/location/{podID}", ds.doGetPodLocation)
-	router.Get("/console-operator/v1/replicas", ds.doGetPodReplicaCount)
-	router.Get("/console-operator/v1/currentTargets", ds.doGetCurrentTargets)
+	// routes for finding information from the operator
+	router.Get("/console-operator/location/{podID}", ds.doGetPodLocation)
+	router.Get("/console-operator/replicas", ds.doGetPodReplicaCount)
+	router.Get("/console-operator/currentTargets", ds.doGetCurrentTargets)
+
+	// routes for interacting with consoles
+	router.Get("/console-operator/follow/{nodeXname}", cs.doFollowConsole)
+	router.Get("/console-operator/interact/{nodeXname}", cs.doInteractConsole)
 }

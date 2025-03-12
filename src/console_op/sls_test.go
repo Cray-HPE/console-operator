@@ -109,7 +109,7 @@ func TestGetXnameAliases(t *testing.T) {
 	defer server.Close()
 
 	// override constructor
-	slsManager := SlsManager{baseUrl: server.URL}
+	slsManager := SlsManager{baseURL: server.URL}
 	expLen := 2 //total of 4 structs, 2 valid
 	xnameAlias, _ := slsManager.getXnameAlias()
 	actualLen := len(xnameAlias)
