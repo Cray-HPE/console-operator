@@ -56,6 +56,6 @@ func setupRoutes(ds DataService, hs HealthService, dbs DebugService, cs ConsoleS
 	router.Get("/console-operator/currentTargets", ds.doGetCurrentTargets)
 
 	// routes for interacting with consoles
-	router.Get("/console-operator/follow/{nodeXname}", cs.doFollowConsole)
+	router.Get("/console-operator/tail/{nodeXname}", cs.doTailConsole)
 	router.Get("/console-operator/interact/{nodeXname}", cs.doInteractConsole)
 }

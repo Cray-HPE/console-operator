@@ -28,6 +28,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -44,6 +45,11 @@ import (
 	"k8s.io/kubectl/pkg/scheme"
 )
 
+// Header key names for api options
+var consoleHeaderTailKey string = "Cray-Console-Lines"
+var consoleHeaderFollowKey string = "Cray-Console-Follow"
+var tenantHeaderKey string = "Cray-Tenant-Name"
+
 // DebugLog - set up debug logging if the env variable is set
 var DebugLog bool = os.Getenv("DebugLog") == "TRUE"
 
@@ -55,7 +61,7 @@ func writeDebugLog(format string, v ...any) {
 
 // ConsoleService interface for interacting with the consoles themselves
 type ConsoleService interface {
-	doFollowConsole(w http.ResponseWriter, r *http.Request)
+	doTailConsole(w http.ResponseWriter, r *http.Request)
 	doInteractConsole(w http.ResponseWriter, r *http.Request)
 }
 
@@ -136,8 +142,8 @@ func (l *IOStreamer) Read(p []byte) (n int, err error) {
 	//defer l.mu.Unlock()
 
 	// Read the next message from the websocket connection
-	msgType, msgArr, err := l.conn.ReadMessage()
-	writeDebugLog("WEBSOCKET::Read Read: type:%d, len:%d, bytes:%s", msgType, len(msgArr), msgArr[:n])
+	_, msgArr, err := l.conn.ReadMessage()
+	//writeDebugLog("WEBSOCKET::Read Read: type:%d, len:%d, bytes:%s", msgType, len(msgArr), msgArr[:n])
 
 	// keep this message to remove from write stream to avoid double writing
 	//l.addInputString(msgArr)
@@ -157,13 +163,13 @@ func (l *IOStreamer) String() string {
 func (l *IOStreamer) writeMessage(msg []byte) error {
 	// if there is nothing to write, don't try to write
 	if len(msg) == 0 {
-		log.Print("WEBSOCKET::Writing::Message - Empty String")
+		//log.Print("WEBSOCKET::Writing::Message - Empty String")
 		return nil
 	}
-	writeDebugLog("WEBSOCKET::Writing::Message: %s", string(msg))
+	//writeDebugLog("WEBSOCKET::Writing::Message: %s", string(msg))
 	err := l.conn.WriteMessage(websocket.TextMessage, msg)
 	if err != nil {
-		log.Printf("WEBSOCKET::Writing::ERROR: %v", err)
+		log.Printf("WEBSOCKET Writing ERROR: %v", err)
 	}
 	return err
 }
@@ -186,10 +192,53 @@ func (l *IOStreamer) Write(p []byte) (n int, err error) {
 	return n, err
 }
 
+func (cs ConsoleManager) validateNode(r *http.Request) (xname, podname, errMsg string, errCode int) {
+	// Find the node requested, make sure it is valid, and if there is a tenant validate authorization
+	xname = ""
+	podname = ""
+	errMsg = ""
+	errCode = http.StatusOK
+
+	// `/console-operator/interact/{nodeXname}` - pull out the node being interacted with
+	xname = chi.URLParam(r, "nodeXname")
+	if xname == "" {
+		log.Printf("There was an error reading the node xname from the request %s", r.URL.Path)
+		errMsg = fmt.Sprintf("There was an error reading the node xname from the request %s", r.URL.Path)
+		errCode = http.StatusBadRequest
+		return
+	}
+
+	// make sure this is a valid node
+	if _, ok := nodeCache[xname]; !ok {
+		log.Printf("%s is not a valid node.", xname)
+		errMsg = fmt.Sprintf("%s is not a valid node.", xname)
+		errCode = http.StatusNotFound
+		return
+	}
+
+	// find which container is monitoring this node
+	podname, err := cs.dataService.getNodePodForXname(xname)
+	if err != nil {
+		log.Printf("Node %s is not being monitored", xname)
+		errMsg = fmt.Sprintf("Node %s is not currently being monitored", xname)
+		errCode = http.StatusNotFound
+		return
+	}
+
+	// If the user is part of a tenant, check if the node is allowed
+	tenant := r.Header.Get(tenantHeaderKey)
+	if tenant != "" && !cs.isTenantAllowed(tenant, xname) {
+		log.Printf("Tenant %s is not allowed to access node %s", tenant, xname)
+		errMsg = fmt.Sprintf("Tenant %s is not allowed to access node %s", tenant, xname)
+		errCode = http.StatusForbidden
+		return
+	}
+
+	return
+}
+
 // Finds and returns the node where the given pod is running within the k8s cluster.
 func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Request) {
-	writeDebugLog("WEBSOCKET:: Interact Console")
-
 	// only allow 'GET' calls
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", "GET")
@@ -198,35 +247,28 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// `/console-operator/interact/{nodeXname}` - pull out the node being interacted with
-	xname := chi.URLParam(r, "nodeXname")
-	if xname == "" {
-		log.Printf("There was an error reading the node xname from the request %s", r.URL.Path)
+	// Make sure this is a valid operation and all required information is present
+	xname, podName, errMsg, errCode := cs.validateNode(r)
+	if errCode != http.StatusOK {
 		var body = BaseResponse{
-			Msg: fmt.Sprintf("There was an error reading the node xname from the request %s", r.URL.Path),
+			Msg: errMsg,
 		}
-		SendResponseJSON(w, http.StatusBadRequest, body)
+		SendResponseJSON(w, errCode, body)
 		return
 	}
 
 	// upgrade https to secure websocket connection
 	conn, err := upgrader.Upgrade(w, r, nil)
+	defer conn.Close()
 	if err != nil {
-		fmt.Println("Error upgrading:", err)
+		log.Printf("Error upgrading http to websocket connection: %v", err)
 		return
 	}
-	defer func() {
-		writeDebugLog("WEBSOCKET:: Doing deferred close")
-	}()
-
-	// find which container is monitoring this node
-	podName, err := cs.dataService.getNodePodForXname(xname)
 
 	// Build the command to be executed in the pod
 	cmd := []string{"conman", "-j", xname}
 
-	// Execute the command in the pod
-	writeDebugLog("WEBSOCKET:: creating request")
+	// Set up the remote request to the pod
 	req := cs.k8s.getClientSet().CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(podName).
@@ -241,17 +283,15 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 			TTY:       true,
 		}, scheme.ParameterCodec)
 
-	writeDebugLog("WEBSOCKET:: creating executor")
+	// create the executor to run the command
 	config, err := rest.InClusterConfig()
 	executor, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
 	if err != nil {
-		log.Printf("failed to create executor: %v", err)
+		log.Printf("doInteractConsole: failed to create executor: %v", err)
 	}
 
-	// object to connect websocket streams to executor io
+	// Execute the command piping I/O to the IOStreamer class
 	webIO := &IOStreamer{conn: conn}
-
-	writeDebugLog("WEBSOCKET:: starting command stream")
 	err = executor.Stream(remotecommand.StreamOptions{
 		Stdin:  webIO,
 		Stdout: webIO,
@@ -259,21 +299,13 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 		Tty:    true,
 	})
 	if err != nil {
-		log.Printf("WEBSOCKET:: failed to execute command in pod: %v", err)
-		return
+		log.Printf("doInteractConsole: failed to execute command in pod: %v", err)
 	}
-
-	// close the connection
-	writeDebugLog("WEBSOCKET:: Shutting down connection")
-	conn.Close()
-
-	writeDebugLog("WEBSOCKET:: Exiting websocket")
 }
 
 // Finds and returns the node where the given pod is running within the k8s cluster.
-func (cs ConsoleManager) doFollowConsole(w http.ResponseWriter, r *http.Request) {
+func (cs ConsoleManager) doTailConsole(w http.ResponseWriter, r *http.Request) {
 	// This is accessed with a connection that can be upgraded to a websocket.
-	writeDebugLog("WEBSOCKET:: Follow Console")
 
 	// only allow 'GET' calls
 	if r.Method != http.MethodGet {
@@ -283,40 +315,35 @@ func (cs ConsoleManager) doFollowConsole(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// `/console-operator/interact/{nodeXname}` - pull out the node being interacted with
-	xname := chi.URLParam(r, "nodeXname")
-	if xname == "" {
-		log.Printf("There was an error reading the node xname from the request %s", r.URL.Path)
+	// Make sure this is a valid operation and all required information is present
+	xname, podName, errMsg, errCode := cs.validateNode(r)
+	if errCode != http.StatusOK {
 		var body = BaseResponse{
-			Msg: fmt.Sprintf("There was an error reading the node xname from the request %s", r.URL.Path),
+			Msg: errMsg,
 		}
-		SendResponseJSON(w, http.StatusBadRequest, body)
+		SendResponseJSON(w, errCode, body)
 		return
 	}
 
 	// upgrade https to secure websocket connection
 	conn, err := upgrader.Upgrade(w, r, nil)
+	defer conn.Close()
 	if err != nil {
 		fmt.Println("Error upgrading:", err)
 		return
 	}
-	defer func() {
-		writeDebugLog("WEBSOCKET:: Doing deferred close")
-	}()
 
-	// find which container is monitoring this node
-	podName, err := cs.dataService.getNodePodForXname(xname)
-
-	// start building the command options
+	// start building the remote command from the input options
 	cmd := []string{"tail"}
 
 	// Find if this is following or just dumping the log
-	if r.Header.Get("X-DUMP-ONLY") != "True" {
+	if r.Header.Get(consoleHeaderFollowKey) == "True" {
+		// NOTE: use '-F' so the follow works through a log rotation
 		cmd = append(cmd, "-F")
 	}
 
 	// Find if there is a number of lines to display
-	numLines := r.Header.Get("X-TAIL")
+	numLines := r.Header.Get(consoleHeaderTailKey)
 	if numLines != "" {
 		cmd = append(cmd, "-n", numLines)
 	}
@@ -325,8 +352,7 @@ func (cs ConsoleManager) doFollowConsole(w http.ResponseWriter, r *http.Request)
 	filename := fmt.Sprintf("/var/log/conman/console.%s", xname)
 	cmd = append(cmd, filename)
 
-	// Execute the command in the pod
-	log.Printf("WEBSOCKET:: creating request")
+	// Set up the remote request to the pod
 	req := cs.k8s.getClientSet().CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(podName).
@@ -341,17 +367,15 @@ func (cs ConsoleManager) doFollowConsole(w http.ResponseWriter, r *http.Request)
 			TTY:       true,
 		}, scheme.ParameterCodec)
 
-	writeDebugLog("WEBSOCKET:: creating executor")
+	// create the executor to run the command
 	config, err := rest.InClusterConfig()
 	executor, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
 	if err != nil {
 		log.Printf("failed to create executor: %v", err)
 	}
 
-	// object to connect websocket streams to executor io
+	// Execute the command piping I/O to the IOStreamer class
 	webIO := &IOStreamer{conn: conn}
-
-	writeDebugLog("WEBSOCKET:: starting command stream")
 	err = executor.Stream(remotecommand.StreamOptions{
 		Stdin:  webIO,
 		Stdout: webIO,
@@ -360,12 +384,75 @@ func (cs ConsoleManager) doFollowConsole(w http.ResponseWriter, r *http.Request)
 	})
 	if err != nil {
 		log.Printf("WEBSOCKET:: failed to execute command in pod: %v", err)
-		return
+	}
+}
+
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+// Tenant authentication
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+
+var serviceName string = "cray-tapms/v1alpha3"
+
+// CASMCMS-9125: Currently when TAPMS bumps this version, it
+// breaks backwards compatibility, so BOS needs to update this
+// whenever TAPMS does.
+var baseEndpoint = "http://" + serviceName
+
+// # CASMPET-6433 changed this from tenant to tenants
+var tenantEndpoint = baseEndpoint + "/tenants"
+
+// function to find if the node is allowed for the input tenant
+func (cs ConsoleManager) isTenantAllowed(tenant string, xname string) bool {
+	// construct the uri for getting the tenant information
+	uri := fmt.Sprintf("%s/%s", tenantEndpoint, tenant)
+	log.Printf("Checking tenant %s for node %s", tenant, xname)
+
+	// make the request to the tenant service
+	data, statusCode, err := getURL(uri, nil)
+	if err != nil {
+		log.Printf("Error calling tapms. rc: %d, error: %s", statusCode, err)
+		return true
 	}
 
-	// close the connection
-	writeDebugLog("WEBSOCKET:: Shutting down connection")
-	conn.Close()
+	// define structs to unmarshal the response
+	// NOTE: defined in https://github.com/Cray-HPE/cray-tapms-operator/blob/main/api/v1alpha3/tenant_types.go
+	type tenantResourceJSON struct {
+		Type                      string   `json:"type" example:"compute" binding:"required"`
+		Xnames                    []string `json:"xnames" example:"x0c3s5b0n0,x0c3s6b0n0" binding:"required"`
+		HsmPartitionName          string   `json:"hsmpartitionname,omitempty" example:"blue"`
+		HsmGroupLabel             string   `json:"hsmgrouplabel,omitempty" example:"green"`
+		EnforceExclusiveHsmGroups bool     `json:"enforceexclusivehsmgroups"`
+	}
+	type tenantStatusJSON struct {
+		ChildNamespaces []string             `json:"childnamespaces,omitempty" example:"vcluster-blue-slurm"`
+		TenantResources []tenantResourceJSON `json:"tenantresources,omitempty"`
+		UUID            string               `json:"uuid,omitempty" example:"550e8400-e29b-41d4-a716-446655440000" format:"uuid"`
+	}
+	type tenantJSON struct {
+		//	Spec TenantSpec `json:"spec,omitempty" binding:"required"`
+		Status tenantStatusJSON `json:"status,omitempty"`
+	}
 
-	writeDebugLog("WEBSOCKET:: Exiting websocket")
+	// unmarshal the data into the tenant struct
+	var nd tenantJSON
+	err = json.Unmarshal(data, &nd)
+	if err != nil {
+		log.Printf("Error unmarshalling data from tapms: %s", err)
+		return true
+	}
+
+	// check if the tenant is in the list of allowed tenants
+	for _, t := range nd.Status.TenantResources {
+		for _, xn := range t.Xnames {
+			log.Printf("  Tenant xname: %s", xn)
+			if xn == xname {
+				return true
+			}
+		}
+	}
+
+	log.Printf("Tenant %s not found for xname %s", tenant, xname)
+	return false
 }
