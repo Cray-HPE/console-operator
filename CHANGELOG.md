@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - CASMCMS-9085 - initial implementation of interactive api
 - CASMCMS-9090 - changes to get cray cli working with websockets
+- CASMCMS-9086 - add tenant authentication
 
 ## [1.13.0] - 2025-02-03
 ### Dependencies
