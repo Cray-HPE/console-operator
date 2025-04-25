@@ -214,6 +214,9 @@ type BaseResponse struct {
 
 // Finds and returns the node where the given pod is running within the k8s cluster.
 func (dm DataManager) doGetPodLocation(w http.ResponseWriter, r *http.Request) {
+	// make sure the request is cleaned up
+	defer drainAndCloseRequestBody(r)
+
 	// only allow 'GET' calls
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", "GET")
@@ -277,6 +280,9 @@ func (dm DataManager) doGetNodePod(w http.ResponseWriter, r *http.Request) {
 	// NOTE: this is provided as a quick check of the internal status for
 	//  administrators to aid in determining the health of this service.
 
+	// make sure the request is cleaned up
+	defer drainAndCloseRequestBody(r)
+
 	// only allow 'GET' calls
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", "GET")
@@ -287,7 +293,6 @@ func (dm DataManager) doGetNodePod(w http.ResponseWriter, r *http.Request) {
 
 	// read the request data - must be in json content
 	reqBody, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
 	if err != nil {
 		log.Printf("There was an error reading the request body: S%s\n", err)
 		var body = BaseResponse{
@@ -368,6 +373,9 @@ func (DataManager) getNodePodForXname(xname string) (string, error) {
 }
 
 func (dm DataManager) doGetPodReplicaCount(w http.ResponseWriter, r *http.Request) {
+	// make sure the request is cleaned up
+	defer drainAndCloseRequestBody(r)
+
 	// only allow 'GET' calls
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", "GET")
@@ -391,6 +399,9 @@ func (dm DataManager) doGetPodReplicaCount(w http.ResponseWriter, r *http.Reques
 }
 
 func (dm DataManager) doGetCurrentTargets(w http.ResponseWriter, r *http.Request) {
+	// make sure the request is cleaned up
+	defer drainAndCloseRequestBody(r)
+
 	// only allow 'GET' calls
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", "GET")

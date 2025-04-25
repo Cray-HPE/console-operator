@@ -30,7 +30,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -387,7 +386,7 @@ func deployMountainConsoleKeys(nodes []nodeConsoleInfo) (bool, scsdList) {
 	}
 
 	// Read in the public key.
-	pubKey, err := ioutil.ReadFile(mountainConsoleKeyPub)
+	pubKey, err := os.ReadFile(mountainConsoleKeyPub)
 	if err != nil {
 		log.Printf("Unable to read the public key file: %s", err)
 		return false, scsdReply

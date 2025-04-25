@@ -98,7 +98,7 @@ func (k8s K8Manager) printK8sInfo() {
 
 	// Or specify namespace to get pods in particular namespace
 	log.Printf("Getting Pods in namespace...")
-	pods, err := k8s.clientset.CoreV1().Pods("services").List(context.TODO(), metav1.ListOptions{})
+	pods, err := k8s.clientset.CoreV1().Pods("services").List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		log.Printf("PodsList error: %s", err.Error())
 	}
@@ -113,7 +113,7 @@ func (k8s K8Manager) printK8sInfo() {
 	// - Use helper functions e.g. errors.IsNotFound()
 	// - And/or cast to StatusError and use its properties like e.g. ErrStatus.Message
 	log.Printf("Getting cray-console-node pods...")
-	_, err = k8s.clientset.CoreV1().Pods("services").Get(context.TODO(), "cray-console-node", metav1.GetOptions{})
+	_, err = k8s.clientset.CoreV1().Pods("services").Get(context.Background(), "cray-console-node", metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		log.Printf("Pod cray-console-node not found in services namespace\n")
 	} else if statusError, isStatus := err.(*errors.StatusError); isStatus {
@@ -130,7 +130,7 @@ func (k8s K8Manager) printK8sInfo() {
 func (k8s K8Manager) getReplicaCount() (replicaCnt int, err error) {
 	// get the stateful set
 	consoleNodeRepCount := -1
-	dep, err := k8s.clientset.AppsV1().StatefulSets("services").Get(context.TODO(), "cray-console-node", metav1.GetOptions{})
+	dep, err := k8s.clientset.AppsV1().StatefulSets("services").Get(context.Background(), "cray-console-node", metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		log.Printf("StatefulSet cray-console-node not found in services namespace\n")
 		return consoleNodeRepCount, err
@@ -159,7 +159,7 @@ func (k8s K8Manager) updateReplicaCount(newReplicaCnt int) {
 	}
 
 	// get the stateful set
-	dep, err := k8s.clientset.AppsV1().StatefulSets("services").Get(context.TODO(), "cray-console-node", metav1.GetOptions{})
+	dep, err := k8s.clientset.AppsV1().StatefulSets("services").Get(context.Background(), "cray-console-node", metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		log.Printf("StatefulSet cray-console-node not found in services namespace\n")
 		return
@@ -179,7 +179,7 @@ func (k8s K8Manager) updateReplicaCount(newReplicaCnt int) {
 	if int32(newReplicaCnt) != currReplicas {
 		// update deployment to the desired number
 		*dep.Spec.Replicas = int32(newReplicaCnt)
-		newDep, err := k8s.clientset.AppsV1().StatefulSets("services").Update(context.TODO(), dep, metav1.UpdateOptions{})
+		newDep, err := k8s.clientset.AppsV1().StatefulSets("services").Update(context.Background(), dep, metav1.UpdateOptions{})
 		if err != nil {
 			// NOTE - do not reset numNodePods if this failed, that should trigger
 			//  a retry the next time it checks
@@ -259,20 +259,13 @@ func (K8Manager) updateNodesPerPod(newNumMtn, newNumRvr int) {
 
 // Find and return where the current pod is running in k8s
 func (k8s K8Manager) getPodLocationAlias(podID string) (loc string, err error) {
-	log.Printf("getPodLocationAlias: %s", podID)
 	corev1 := k8s.clientset.CoreV1()
-	log.Printf("  corev1: %v\n", corev1)
 	pods := corev1.Pods("services")
-	log.Printf("  pods: %v\n", pods)
-	pod, err := pods.Get(context.TODO(), podID, metav1.GetOptions{})
-	log.Printf("  pod: %v\n", pod)
-
-	//pod, err := k8s.clientset.CoreV1().Pods("services").Get(context.TODO(), podID, metav1.GetOptions{})
+	pod, err := pods.Get(context.Background(), podID, metav1.GetOptions{})
 	if err != nil {
 		log.Printf("Error: getPodLocationAlias: Unable to find the node for pod %s, %s", podID, err)
 		return "", err
 	}
 
-	loc = pod.Spec.NodeName
-	return loc, err
+	return pod.Spec.NodeName, err
 }

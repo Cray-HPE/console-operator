@@ -143,7 +143,6 @@ func (l *IOStreamer) Read(p []byte) (n int, err error) {
 
 	// Read the next message from the websocket connection
 	_, msgArr, err := l.conn.ReadMessage()
-	//writeDebugLog("WEBSOCKET::Read Read: type:%d, len:%d, bytes:%s", msgType, len(msgArr), msgArr[:n])
 
 	// keep this message to remove from write stream to avoid double writing
 	//l.addInputString(msgArr)
@@ -163,10 +162,9 @@ func (l *IOStreamer) String() string {
 func (l *IOStreamer) writeMessage(msg []byte) error {
 	// if there is nothing to write, don't try to write
 	if len(msg) == 0 {
-		//log.Print("WEBSOCKET::Writing::Message - Empty String")
+		writeDebugLog("WEBSOCKET::Writing::Message - Empty String")
 		return nil
 	}
-	//writeDebugLog("WEBSOCKET::Writing::Message: %s", string(msg))
 	err := l.conn.WriteMessage(websocket.TextMessage, msg)
 	if err != nil {
 		log.Printf("WEBSOCKET Writing ERROR: %v", err)
@@ -228,17 +226,25 @@ func (cs ConsoleManager) validateNode(r *http.Request) (xname, podname, errMsg s
 	// If the user is part of a tenant, check if the node is allowed
 	tenant := r.Header.Get(tenantHeaderKey)
 	if tenant != "" && !cs.isTenantAllowed(tenant, xname) {
+		// log the reason for the failure, but give the same message
+		// to the user as if the node was not found
 		log.Printf("Tenant %s is not allowed to access node %s", tenant, xname)
-		errMsg = fmt.Sprintf("Tenant %s is not allowed to access node %s", tenant, xname)
-		errCode = http.StatusForbidden
+		errMsg = fmt.Sprintf("%s is not a valid node.", xname)
+		errCode = http.StatusNotFound
 		return
 	}
 
 	return
 }
 
-// Finds and returns the node where the given pod is running within the k8s cluster.
+// Handle the node interaction connection.
 func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Request) {
+	// This is accessed with a connection that can be upgraded to a websocket.
+
+	// make sure the request is cleaned up
+	defer drainAndCloseRequestBody(r)
+
+	log.Printf("Entering doInteractConsole")
 	// only allow 'GET' calls
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", "GET")
@@ -248,6 +254,7 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Make sure this is a valid operation and all required information is present
+	log.Printf("Validating node")
 	xname, podName, errMsg, errCode := cs.validateNode(r)
 	if errCode != http.StatusOK {
 		var body = BaseResponse{
@@ -303,9 +310,12 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// Finds and returns the node where the given pod is running within the k8s cluster.
+// Handle the console log tail operation.
 func (cs ConsoleManager) doTailConsole(w http.ResponseWriter, r *http.Request) {
 	// This is accessed with a connection that can be upgraded to a websocket.
+
+	// make sure the request is cleaned up
+	defer drainAndCloseRequestBody(r)
 
 	// only allow 'GET' calls
 	if r.Method != http.MethodGet {
@@ -396,11 +406,9 @@ func (cs ConsoleManager) doTailConsole(w http.ResponseWriter, r *http.Request) {
 var serviceName string = "cray-tapms/v1alpha3"
 
 // CASMCMS-9125: Currently when TAPMS bumps this version, it
-// breaks backwards compatibility, so BOS needs to update this
+// breaks backwards compatibility, so we need to update this
 // whenever TAPMS does.
 var baseEndpoint = "http://" + serviceName
-
-// # CASMPET-6433 changed this from tenant to tenants
 var tenantEndpoint = baseEndpoint + "/tenants"
 
 // function to find if the node is allowed for the input tenant

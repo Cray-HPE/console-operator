@@ -84,6 +84,9 @@ func (DebugManager) pinNumNodes(numAsk, numMin, numMax int) (int, bool) {
 
 // Debugging information probe
 func (dm DebugManager) doSetMaxNodesPerPod(w http.ResponseWriter, r *http.Request) {
+	// make sure the request is cleaned up
+	defer drainAndCloseRequestBody(r)
+
 	// API to set the max number of nodes per pod
 	log.Printf("Call to setMaxNodesPerPod...")
 
@@ -97,7 +100,6 @@ func (dm DebugManager) doSetMaxNodesPerPod(w http.ResponseWriter, r *http.Reques
 
 	// read the request data - must be in json content
 	reqBody, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
 	if err != nil {
 		log.Printf("There was an error reading the request body: S%s\n", err)
 		var body = BaseResponse{
@@ -163,6 +165,9 @@ func (dm DebugManager) doInfo(w http.ResponseWriter, r *http.Request) {
 	// NOTE: this is provided as a quick check of the internal status for
 	//  administrators to aid in determining the health of this service.
 
+	// make sure the request is cleaned up
+	defer drainAndCloseRequestBody(r)
+
 	// only allow 'GET' calls
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", "GET")
@@ -203,6 +208,9 @@ func (dm DebugManager) doClearData(w http.ResponseWriter, r *http.Request) {
 	// will get picked up again on the next call to state manager.
 	log.Printf("Calling doClearData...")
 
+	// make sure the request is cleaned up
+	defer drainAndCloseRequestBody(r)
+
 	// only allow 'DELETE' calls
 	if r.Method != http.MethodDelete {
 		w.Header().Set("Allow", "DELETE")
@@ -225,6 +233,9 @@ func (dm DebugManager) doClearData(w http.ResponseWriter, r *http.Request) {
 
 // Debugging only - suspend querying the state manager
 func (DebugManager) doSuspend(w http.ResponseWriter, r *http.Request) {
+	// make sure the request is cleaned up
+	defer drainAndCloseRequestBody(r)
+
 	// only allow 'POST' calls
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", "POST")
@@ -243,6 +254,9 @@ func (DebugManager) doSuspend(w http.ResponseWriter, r *http.Request) {
 
 // Debugging only - resume querying the state manager
 func (DebugManager) doResume(w http.ResponseWriter, r *http.Request) {
+	// make sure the request is cleaned up
+	defer drainAndCloseRequestBody(r)
+
 	// only allow 'POST' calls
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", "POST")
