@@ -46,8 +46,8 @@ import (
 )
 
 // Header key names for api options
-var consoleHeaderTailKey string = "Cray-Tail"
-var consoleHeaderDumpOnlyKey string = "Cray-Dump-Only"
+var consoleHeaderTailKey string = "Cray-Console-Lines"
+var consoleHeaderFollowKey string = "Cray-Console-Follow"
 var tenantHeaderKey string = "Cray-Tenant-Name"
 
 // DebugLog - set up debug logging if the env variable is set
@@ -61,7 +61,7 @@ func writeDebugLog(format string, v ...any) {
 
 // ConsoleService interface for interacting with the consoles themselves
 type ConsoleService interface {
-	doFollowConsole(w http.ResponseWriter, r *http.Request)
+	doTailConsole(w http.ResponseWriter, r *http.Request)
 	doInteractConsole(w http.ResponseWriter, r *http.Request)
 }
 
@@ -304,7 +304,7 @@ func (cs ConsoleManager) doInteractConsole(w http.ResponseWriter, r *http.Reques
 }
 
 // Finds and returns the node where the given pod is running within the k8s cluster.
-func (cs ConsoleManager) doFollowConsole(w http.ResponseWriter, r *http.Request) {
+func (cs ConsoleManager) doTailConsole(w http.ResponseWriter, r *http.Request) {
 	// This is accessed with a connection that can be upgraded to a websocket.
 
 	// only allow 'GET' calls
@@ -337,7 +337,7 @@ func (cs ConsoleManager) doFollowConsole(w http.ResponseWriter, r *http.Request)
 	cmd := []string{"tail"}
 
 	// Find if this is following or just dumping the log
-	if r.Header.Get(consoleHeaderDumpOnlyKey) != "True" {
+	if r.Header.Get(consoleHeaderFollowKey) == "True" {
 		// NOTE: use '-F' so the follow works through a log rotation
 		cmd = append(cmd, "-F")
 	}
