@@ -1,7 +1,7 @@
 //
 //  MIT License
 //
-//  (C) Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+//  (C) Copyright 2021-2025 Hewlett Packard Enterprise Development LP
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -27,7 +27,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 )
@@ -39,6 +39,7 @@ import (
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+// DebugService - interface with debugging services
 type DebugService interface {
 	doInfo(w http.ResponseWriter, r *http.Request)
 	doClearData(w http.ResponseWriter, r *http.Request)
@@ -47,11 +48,13 @@ type DebugService interface {
 	doSetMaxNodesPerPod(w http.ResponseWriter, r *http.Request)
 }
 
+// DebugManager - implementation of DebugService
 type DebugManager struct {
 	dataService   DataService
 	healthService HealthService
 }
 
+// NewDebugManager - factory function for new DebugManager
 func NewDebugManager(ds DataService, hs HealthService) DebugService {
 	return &DebugManager{dataService: ds, healthService: hs}
 }
@@ -81,6 +84,9 @@ func (DebugManager) pinNumNodes(numAsk, numMin, numMax int) (int, bool) {
 
 // Debugging information probe
 func (dm DebugManager) doSetMaxNodesPerPod(w http.ResponseWriter, r *http.Request) {
+	// make sure the request is cleaned up
+	defer drainAndCloseRequestBody(r)
+
 	// API to set the max number of nodes per pod
 	log.Printf("Call to setMaxNodesPerPod...")
 
@@ -93,8 +99,7 @@ func (dm DebugManager) doSetMaxNodesPerPod(w http.ResponseWriter, r *http.Reques
 	}
 
 	// read the request data - must be in json content
-	reqBody, err := ioutil.ReadAll(r.Body)
-	defer r.Body.Close()
+	reqBody, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("There was an error reading the request body: S%s\n", err)
 		var body = BaseResponse{
@@ -160,6 +165,9 @@ func (dm DebugManager) doInfo(w http.ResponseWriter, r *http.Request) {
 	// NOTE: this is provided as a quick check of the internal status for
 	//  administrators to aid in determining the health of this service.
 
+	// make sure the request is cleaned up
+	defer drainAndCloseRequestBody(r)
+
 	// only allow 'GET' calls
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", "GET")
@@ -200,6 +208,9 @@ func (dm DebugManager) doClearData(w http.ResponseWriter, r *http.Request) {
 	// will get picked up again on the next call to state manager.
 	log.Printf("Calling doClearData...")
 
+	// make sure the request is cleaned up
+	defer drainAndCloseRequestBody(r)
+
 	// only allow 'DELETE' calls
 	if r.Method != http.MethodDelete {
 		w.Header().Set("Allow", "DELETE")
@@ -222,6 +233,9 @@ func (dm DebugManager) doClearData(w http.ResponseWriter, r *http.Request) {
 
 // Debugging only - suspend querying the state manager
 func (DebugManager) doSuspend(w http.ResponseWriter, r *http.Request) {
+	// make sure the request is cleaned up
+	defer drainAndCloseRequestBody(r)
+
 	// only allow 'POST' calls
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", "POST")
@@ -240,6 +254,9 @@ func (DebugManager) doSuspend(w http.ResponseWriter, r *http.Request) {
 
 // Debugging only - resume querying the state manager
 func (DebugManager) doResume(w http.ResponseWriter, r *http.Request) {
+	// make sure the request is cleaned up
+	defer drainAndCloseRequestBody(r)
+
 	// only allow 'POST' calls
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", "POST")

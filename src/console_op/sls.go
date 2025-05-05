@@ -28,17 +28,19 @@ import (
 	"log"
 )
 
+// SlsService - service interface for interacting with SLS
 type SlsService interface {
 	getXnameAlias() (xnameNodeAlias []XnameNodeAlias, err error)
 }
 
-// implements SlsService
+// SlsManager - implements SlsService
 type SlsManager struct {
-	baseUrl string
+	baseURL string
 }
 
+// NewSlsManager - factory function to create SlsManager
 func NewSlsManager() SlsService {
-	return &SlsManager{baseUrl: "http://cray-sls/v1"}
+	return &SlsManager{baseURL: "http://cray-sls/v1"}
 }
 
 // https://github.com/Cray-HPE/hms-sls/blob/87f0f0aee95ad5ae1a36b99b787b266bc044fc47/pkg/sls-common/types.go#L46
@@ -55,7 +57,7 @@ func NewSlsManager() SlsService {
 // 	VaultData          interface{}        `json:"VaultData,omitempty"`
 // }
 
-// represents node alias and xname mapping
+// XnameNodeAlias - represents node alias and xname mapping
 type XnameNodeAlias struct {
 	xname string
 	alias string
@@ -64,10 +66,10 @@ type XnameNodeAlias struct {
 // Get node xname data from hms-sls
 // Refactor to struct Unmarshal if other fields are needed
 func (sls SlsManager) getXnameAlias() (xnameNodeAlias []XnameNodeAlias, err error) {
-	hwUrl := sls.baseUrl + "/hardware"
-	data, _, err := getURL(hwUrl, nil)
+	hwURL := sls.baseURL + "/hardware"
+	data, _, err := getURL(hwURL, nil)
 	if err != nil {
-		log.Printf("Error: GET %s to hms-sls failed %s\n", hwUrl, err)
+		log.Printf("Error: GET %s to hms-sls failed %s\n", hwURL, err)
 		return nil, err
 	}
 

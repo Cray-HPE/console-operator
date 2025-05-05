@@ -1,7 +1,7 @@
 //
 //  MIT License
 //
-//  (C) Copyright 2019-2022, 2024 Hewlett Packard Enterprise Development LP
+//  (C) Copyright 2019-2022, 2024-2025 Hewlett Packard Enterprise Development LP
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -29,7 +29,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 )
@@ -88,14 +88,14 @@ func getURL(URL string, requestHeaders map[string]string) ([]byte, int, error) {
 	}
 	client := &http.Client{}
 	resp, err := client.Do(req)
+	defer drainAndCloseResponseBody(resp)
 	if err != nil {
 		// handle error
 		log.Printf("getURL Error on request to %s: %s", URL, err)
 		return nil, -1, err
 	}
 	log.Printf("getURL Response Status code: %d\n", resp.StatusCode)
-	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		// handle error
 		log.Printf("Error reading response: %s", err)
@@ -124,6 +124,7 @@ func postURL(URL string, requestBody []byte, requestHeaders map[string]string) (
 	}
 	client := &http.Client{}
 	resp, err := client.Do(req)
+	defer drainAndCloseResponseBody(resp)
 	if err != nil {
 		// handle error
 		log.Printf("postURL Error on request to %s: %s", URL, err)
@@ -131,8 +132,7 @@ func postURL(URL string, requestBody []byte, requestHeaders map[string]string) (
 	}
 
 	log.Printf("postURL Response Status code: %d\n", resp.StatusCode)
-	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		// handle error
 		log.Printf("postURL Error reading response: %s", err)
@@ -160,6 +160,7 @@ func putURL(URL string, requestBody []byte, requestHeaders map[string]string) ([
 	}
 	client := &http.Client{}
 	resp, err := client.Do(req)
+	defer drainAndCloseResponseBody(resp)
 	if err != nil {
 		// handle error
 		log.Printf("postURL Error on request to %s: %s", URL, err)
@@ -167,8 +168,7 @@ func putURL(URL string, requestBody []byte, requestHeaders map[string]string) ([
 	}
 
 	log.Printf("postURL Response Status code: %d\n", resp.StatusCode)
-	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		// handle error
 		log.Printf("postURL Error reading response: %s", err)
@@ -196,6 +196,7 @@ func deleteURL(URL string, requestBody []byte, requestHeaders map[string]string)
 	}
 	client := &http.Client{}
 	resp, err := client.Do(req)
+	defer drainAndCloseResponseBody(resp)
 	if err != nil {
 		// handle error
 		log.Printf("deleteURL Error on request to %s: %s", URL, err)
@@ -203,8 +204,7 @@ func deleteURL(URL string, requestBody []byte, requestHeaders map[string]string)
 	}
 
 	log.Printf("deleteURL Response Status code: %d\n", resp.StatusCode)
-	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		// handle error
 		log.Printf("deleteURL Error reading response: %s", err)
@@ -212,4 +212,27 @@ func deleteURL(URL string, requestBody []byte, requestHeaders map[string]string)
 	}
 	//fmt.Printf("Data: %s\n", data)
 	return data, resp.StatusCode, err
+}
+
+// Response bodies should always be drained and closed, else we leak resources
+// and fail to reuse network connections.
+
+func drainAndCloseResponseBody(resp *http.Response) {
+	if resp != nil && resp.Body != nil {
+		_, _ = io.Copy(io.Discard, resp.Body) // ok even if already drained
+		resp.Body.Close()                     // ok even if already closed
+	}
+}
+
+// While it is generally not a requirement to close request bodies in server
+// handlers, it is good practice.  If a body is only partially read, there can
+// be a resource leak.  Additionally, if the body is not read at all, the
+// network connection will be closed and will not be reused even though the
+// http server will properly drain and close the request body.
+
+func drainAndCloseRequestBody(req *http.Request) {
+	if req != nil && req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body) // ok even if already drained
+		req.Body.Close()                     // ok even if already closed
+	}
 }
