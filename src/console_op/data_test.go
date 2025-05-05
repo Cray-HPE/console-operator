@@ -1,7 +1,7 @@
 //
 //  MIT License
 //
-//  (C) Copyright 2023 Hewlett Packard Enterprise Development LP
+//  (C) Copyright 2023,2025 Hewlett Packard Enterprise Development LP
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -55,7 +55,7 @@ func (SlsGetXnameAliasesMock) getXnameAlias() (xnameNodeAlias []XnameNodeAlias, 
 
 func TestDoGetPodLocation(t *testing.T) {
 	rr := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/console-operator/v1/location/{podID}", nil)
+	req := httptest.NewRequest("GET", "/console-operator/location/{podID}", nil)
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Add("podID", "pod-1234")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
@@ -100,7 +100,7 @@ func (K8GetReplicaCountMock) getReplicaCount() (repCount int, err error) {
 
 func TestDoGetPodReplicaCount(t *testing.T) {
 	rr := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/console-operator/v1/replicas", nil)
+	req := httptest.NewRequest("GET", "/console-operator/replicas", nil)
 
 	// Expected results
 	eReplicas := 3

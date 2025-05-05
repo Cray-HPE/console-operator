@@ -24,7 +24,7 @@
 # Dockerfile for cray-console-operator service
 
 # Build will be where we build the go binary
-FROM artifactory.algol60.net/docker.io/library/golang:1.18-alpine as build
+FROM artifactory.algol60.net/docker.io/library/golang:1.23-alpine AS build
 RUN set -eux \
     && apk add --upgrade --no-cache apk-tools \
     && apk update \
@@ -43,13 +43,13 @@ COPY vendor/ $GOPATH/src
 RUN set -ex \
     && go version \
     && go env -w GO111MODULE=auto \
-    && go build -v -i -o /app/console_operator $GOPATH/src/console_op
+    && go build -v -o /app/console_operator $GOPATH/src/console_op
 
 ### Final Stage ###
 # Start with a fresh image so build tools are not included
-FROM artifactory.algol60.net/csm-docker/stable/docker.io/library/alpine:3.21 as base
+FROM artifactory.algol60.net/csm-docker/stable/docker.io/library/alpine:3.21 AS base
 
-# Install conman application from package
+# Install required packages
 RUN set -eux \
 	&& apk add --upgrade --no-cache apk-tools \
     && apk update \

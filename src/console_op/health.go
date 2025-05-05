@@ -68,6 +68,9 @@ func (hm HealthManager) doHealth(w http.ResponseWriter, r *http.Request) {
 	// NOTE: this is provided as a quick check of the internal status for
 	//  administrators to aid in determining the health of this service.
 
+	// make sure the request is cleaned up
+	defer drainAndCloseRequestBody(r)
+
 	// only allow 'GET' calls
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", "GET")
@@ -109,6 +112,9 @@ func (HealthManager) doLiveness(w http.ResponseWriter, r *http.Request) {
 	//  for liveness/readiness checks.  This function should only be
 	//  used to indicate the server is still alive and processing requests.
 
+	// make sure the request is cleaned up
+	defer drainAndCloseRequestBody(r)
+
 	// only allow 'GET' calls
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", "GET")
@@ -126,6 +132,9 @@ func (HealthManager) doReadiness(w http.ResponseWriter, r *http.Request) {
 	// NOTE: this is coded in accordance with kubernetes best practices
 	//  for liveness/readiness checks.  This function should only be
 	//  used to indicate the server is still alive and processing requests.
+
+	// make sure the request is cleaned up
+	defer drainAndCloseRequestBody(r)
 
 	// only allow 'GET' calls
 	if r.Method != http.MethodGet {

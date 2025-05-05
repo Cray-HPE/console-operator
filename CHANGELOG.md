@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.0] - 2025-05-05
+### Added
+- CASMCMS-9085 - initial implementation of interactive api
+- CASMCMS-9090 - changes to get cray cli working with websockets
+- CASMCMS-9086 - add tenant authentication
+
 ## [1.14.0] - 2025-02-13
 ### Dependencies
 - CASMCMS-9282: Bump Alpine version from 3.15 to 3.21, because 3.15 no longer receives security patches
