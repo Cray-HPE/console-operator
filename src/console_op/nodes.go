@@ -37,7 +37,7 @@ import (
 type NodeService interface {
 	getRedfishEndpoints() ([]redfishEndpoint, error)
 	getStateComponents() ([]stateComponent, error)
-	getCurrentNodesFromHSM() (nodes []nodeConsoleInfo)
+	getCurrentNodesFromHSM() (nodes []nodeConsoleInfo, retErr error)
 	updateNodeCounts(numMtnNodes, numRvrNodes int)
 }
 
@@ -224,22 +224,26 @@ func (NodeManager) getParadiseNodes() (map[string]struct{}, error) {
 	return nodes, nil
 }
 
-func (nm NodeManager) getCurrentNodesFromHSM() (nodes []nodeConsoleInfo) {
+func (nm NodeManager) getCurrentNodesFromHSM() (nodes []nodeConsoleInfo, retErr error) {
 	// Get the BMC IP addresses and user, and password for individual nodes.
 	// conman is only set up for River nodes.
+	nodes = nil
+	retErr = nil
 	log.Printf("Starting to get current nodes on the system")
 
 	rfEndpoints, err := nm.getRedfishEndpoints()
 	if err != nil {
-		log.Printf("Unable to build configuration file - error fetching redfish endpoints: %s", err)
-		return nil
+		log.Printf("Error fetching redfish endpoints: %s", err)
+		retErr = fmt.Errorf("Error fetching redfish endpoints: %s", err)
+		return
 	}
 
 	// get the state information to find mountain/river designation
 	stComps, err := nm.getStateComponents()
 	if err != nil {
-		log.Printf("Unable to build configuration file - error fetching state components: %s", err)
-		return nil
+		log.Printf("Error fetching state components: %s", err)
+		retErr = fmt.Errorf("Error fetching state components: %s", err)
+		return
 	}
 
 	// get the paradise nodes
@@ -257,7 +261,6 @@ func (nm NodeManager) getCurrentNodesFromHSM() (nodes []nodeConsoleInfo) {
 	}
 
 	// create river and mountain node information
-	nodes = nil
 	for _, sc := range stComps {
 		if sc.Type == "Node" {
 			// create a new entry for this node - take initial vals from state component info
@@ -285,8 +288,7 @@ func (nm NodeManager) getCurrentNodesFromHSM() (nodes []nodeConsoleInfo) {
 			}
 		}
 	}
-
-	return nodes
+	return
 }
 
 // update settings based on the current number of nodes in the system
