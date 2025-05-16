@@ -82,7 +82,12 @@ func updateCachedNodeData(ds DataService, ns NodeService, updateAll bool) (bool,
 	updateSuccessful := true
 
 	// get the current endpoints from hsm
-	currNodes := ns.getCurrentNodesFromHSM()
+	currNodes, err := ns.getCurrentNodesFromHSM()
+	if err != nil {
+		log.Printf("Error getting current nodes from HSM: %s", err)
+		return false, nil
+	}
+
 	currNodesMap := make(map[string]nodeConsoleInfo)
 	for _, n := range currNodes {
 		currNodesMap[n.NodeName] = n

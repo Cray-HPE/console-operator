@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed
+- CASMTRIAGE-7801 - node connections are unstable when hsm was responding erratically
+- CASMTRIAGE-8101 - remove the ssh keys from the shared volume
+
+### Dependencies
+- Bump `golang.org/x/net` from v0.36.0 to v0.38.0
+- Bump `golang.org/x/crypto` from v0.35.0 to v0.36.0
+- Bump `golang.org/x/sys` from v0.30.0 to v0.31.0
+- Bump `golang.org/x/term` from v0.29.0 to v0.30.0
+- Bump `golang.org/x/text` from v0.22.0 to v0.23.0
 
 ## [1.15.0] - 2025-05-05
 ### Added
