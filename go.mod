@@ -41,9 +41,9 @@ require (
 //  This is set explicitly to this version to work around a build issue as
 //  documented here: https://github.com/kubernetes/client-go/issues/1313
 //
-//  golang.org/x/net v0.36.0
+//  golang.org/x/net v0.38.0
 //  This is set explicitly to this version to work around a security issue that is
-//  resolved in v0.36.0
+//  resolved in v0.38.0
 require (
 	cloud.google.com/go/compute/metadata v0.6.0 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
@@ -75,12 +75,12 @@ require (
 	github.com/rogpeppe/go-internal v1.13.1 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
-	golang.org/x/crypto v0.35.0 // indirect
-	golang.org/x/net v0.36.0 // indirect
+	golang.org/x/crypto v0.36.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/oauth2 v0.23.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
-	golang.org/x/term v0.29.0 // indirect
-	golang.org/x/text v0.22.0 // indirect
+	golang.org/x/sys v0.31.0 // indirect
+	golang.org/x/term v0.30.0 // indirect
+	golang.org/x/text v0.23.0 // indirect
 	golang.org/x/time v0.7.0 // indirect
 	google.golang.org/protobuf v1.35.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
