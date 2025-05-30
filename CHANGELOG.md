@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.15.0] - 2025-05-29
+## [1.16.1] - 2025-05-29
+### Fixed
+- CASMCMS-9449 - move api document into this repository
+
+## [1.16.0] - 2025-05-29
 ### Fixed
 - CASMTRIAGE-7801 - node connections are unstable when hsm was responding erratically
 - CASMTRIAGE-8101 - remove the ssh keys from the shared volume
