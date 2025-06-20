@@ -27,7 +27,7 @@ go 1.23.0
 toolchain go1.23.1
 
 require (
-	github.com/go-chi/chi/v5 v5.0.7
+	github.com/go-chi/chi/v5 v5.2.2
 	github.com/gorilla/websocket v1.5.3
 	github.com/tidwall/gjson v1.9.3
 	k8s.io/api v0.24.17
