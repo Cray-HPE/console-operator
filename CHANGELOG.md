@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Dependencies
+- Bump `golang.org/x/oauth2` from 0.23.0 to 0.27.0 ([#100](https://github.com/Cray-HPE/console-operator/pull/100))
+
 ## [1.17.0] - 2025-09-18
 ### Fixed
 - CASMPET-7667 - create cray-console-operator-psp rolebinding only if PSP capability exists
