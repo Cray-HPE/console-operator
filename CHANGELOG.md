@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Dependencies
+- Bump `github.com/google/gnostic` from 0.5.7-v3refs to 0.5.7 ([#108](https://github.com/Cray-HPE/console-operator/pull/108))
+
 ## [1.17.0] - 2025-09-18
 ### Fixed
 - CASMPET-7667 - create cray-console-operator-psp rolebinding only if PSP capability exists
