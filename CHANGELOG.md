@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump `actions/checkout` from 4 to 7 ([#110](https://github.com/Cray-HPE/console-operator/pull/110))
 - Bump `golang.org/x/net` from 0.38.0 to 0.55.0 ([#106](https://github.com/Cray-HPE/console-operator/pull/106))
     - Move to Go 1.25 to support this upgrade
+- Bump `golang.org/x/crypto` from 0.51.0 to 0.52.0 ([#115](https://github.com/Cray-HPE/console-operator/pull/115))
+- Bump `golang.org/x/oauth2` from 0.23.0 to 0.27.0 ([#115](https://github.com/Cray-HPE/console-operator/pull/115))
 
 ## [1.17.0] - 2025-09-18
 ### Fixed
