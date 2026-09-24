@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump `github.com/go-chi/chi/v5` from 5.0.7 to 5.2.4 ([#99](https://github.com/Cray-HPE/console-operator/pull/99))
 - Bump `actions/checkout` from 4 to 7 ([#110](https://github.com/Cray-HPE/console-operator/pull/110))
 - Bump `golang.org/x/net` from 0.38.0 to 0.55.0 ([#106](https://github.com/Cray-HPE/console-operator/pull/106))
+    - Move to Go 1.25 to support this upgrade
 
 ## [1.17.0] - 2025-09-18
 ### Fixed
