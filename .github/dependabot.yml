@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# (C) Copyright 2023-2025 Hewlett Packard Enterprise Development LP
+# (C) Copyright 2023-2026 Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -38,13 +38,42 @@ updates:
       - "github-actions-deps"
       - "dependabot"
     open-pull-requests-limit: 16
-groups:
-  k8s:
-    applies-to: "security-updates"
-    patterns: [ "k8s.io/*" ]
-  protobuf:
-    applies-to: "security-updates"
-    patterns: [ "github.com/golang/protobuf", "golang.org/protobuf", "google.golang.org/protobuf" ]
-  x:
-    applies-to: "security-updates"
-    patterns: [ "github.com/golang/x/*", "golang.org/x/*", "google.golang.org/x/*" ]
+  - package-ecosystem: "gomod"
+    directory: "/" # Location of package manifests
+    schedule:
+      interval: "daily"
+    assignees:
+      - "Cray-HPE/Cray-Management-Systems"
+    labels:
+      - "go-deps"
+      - "dependabot"
+    open-pull-requests-limit: 16
+    groups:
+      k8s:
+        applies-to: "security-updates"
+        patterns: [ "k8s.io/*" ]
+      k8s:
+        applies-to: "version-updates"
+        patterns: [ "k8s.io/*" ]
+      protobuf:
+        applies-to: "security-updates"
+        patterns: [ "github.com/golang/protobuf", "golang.org/protobuf", "google.golang.org/protobuf" ]
+      protobuf:
+        applies-to: "version-updates"
+        patterns: [ "github.com/golang/protobuf", "golang.org/protobuf", "google.golang.org/protobuf" ]
+      x:
+        applies-to: "security-updates"
+        patterns: [ "github.com/golang/x/*", "golang.org/x/*", "google.golang.org/x/*" ]
+      x:
+        applies-to: "version-updates"
+        patterns: [ "github.com/golang/x/*", "golang.org/x/*", "google.golang.org/x/*" ]
+    allow:
+      # Allow updates to both direct and indirect dependencies
+      - dependency-type: "all"
+    ignore:
+      # Block routine version updates
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
