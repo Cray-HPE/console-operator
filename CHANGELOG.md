@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Dependencies
+
+- Bump `dangoslen/dependabot-changelog-helper` from 3 to 4 ([#111](https://github.com/Cray-HPE/console-operator/pull/111))
+
 ## [1.17.0] - 2025-09-18
 ### Fixed
 - CASMPET-7667 - create cray-console-operator-psp rolebinding only if PSP capability exists
