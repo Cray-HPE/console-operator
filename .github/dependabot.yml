@@ -79,7 +79,7 @@ updates:
       - dependency-name: "golang.org/x/crypto"
         versions: [ ">0.52.0" ]
       - dependency-name: "golang.org/x/net"
-        versions: [ ">0.55.0" ]
+        versions: [ ">0.55.0", "<0.55.0" ]
       - dependency-name: "golang.org/x/oauth2"
         versions: [ ">0.27.0" ]
       # Block routine version updates
