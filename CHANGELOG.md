@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Dependencies
 
 - Bump `dangoslen/dependabot-changelog-helper` from 3 to 4 ([#111](https://github.com/Cray-HPE/console-operator/pull/111))
+- Bump `stefanzweifel/git-auto-commit-action` from 5 to 7 ([#109](https://github.com/Cray-HPE/console-operator/pull/109))
+- Bump `actions/checkout` from 4 to 7 ([#110](https://github.com/Cray-HPE/console-operator/pull/110))
 
 ## [1.17.0] - 2025-09-18
 ### Fixed
