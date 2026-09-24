@@ -47,7 +47,7 @@ updates:
     labels:
       - "go-deps"
       - "dependabot"
-    open-pull-requests-limit: 16
+    open-pull-requests-limit: 12
     groups:
       k8s:
         applies-to: "security-updates"
