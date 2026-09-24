@@ -48,33 +48,33 @@ updates:
       - "go-deps"
       - "dependabot"
     open-pull-requests-limit: 12
-    groups:
-      k8s:
-        applies-to: "security-updates"
-        patterns: [ "k8s.io/*" ]
-      k8s:
-        applies-to: "version-updates"
-        patterns: [ "k8s.io/*" ]
-      protobuf:
-        applies-to: "security-updates"
-        patterns: [ "github.com/golang/protobuf", "golang.org/protobuf", "google.golang.org/protobuf" ]
-      protobuf:
-        applies-to: "version-updates"
-        patterns: [ "github.com/golang/protobuf", "golang.org/protobuf", "google.golang.org/protobuf" ]
-      x:
-        applies-to: "security-updates"
-        patterns: [ "github.com/golang/x/*", "golang.org/x/*", "google.golang.org/x/*" ]
-      x:
-        applies-to: "version-updates"
-        patterns: [ "github.com/golang/x/*", "golang.org/x/*", "google.golang.org/x/*" ]
+#    groups:
+#      k8s:
+#        applies-to: "security-updates"
+#        patterns: [ "k8s.io/*" ]
+#      k8s:
+#        applies-to: "version-updates"
+#        patterns: [ "k8s.io/*" ]
+#      protobuf:
+#        applies-to: "security-updates"
+#        patterns: [ "github.com/golang/protobuf", "golang.org/protobuf", "google.golang.org/protobuf" ]
+#      protobuf:
+#        applies-to: "version-updates"
+#        patterns: [ "github.com/golang/protobuf", "golang.org/protobuf", "google.golang.org/protobuf" ]
+#      x:
+#        applies-to: "security-updates"
+#        patterns: [ "github.com/golang/x/*", "golang.org/x/*", "google.golang.org/x/*" ]
+#      x:
+#        applies-to: "version-updates"
+#        patterns: [ "github.com/golang/x/*", "golang.org/x/*", "google.golang.org/x/*" ]
     allow:
       # Allow updates to both direct and indirect dependencies
-      - dependency-type: "all"
-        dependency-name: "golang.org/x/crypto"
+#      - dependency-type: "all"
+#        dependency-name: "golang.org/x/crypto"
       - dependency-type: "all"
         dependency-name: "golang.org/x/net"
-      - dependency-type: "all"
-        dependency-name: "golang.org/x/oauth2"
+#      - dependency-type: "all"
+#        dependency-name: "golang.org/x/oauth2"
     ignore:
       - dependency-name: "golang.org/x/crypto"
         versions: [ ">0.52.0" ]
