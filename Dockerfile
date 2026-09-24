@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# (C) Copyright 2020-2022, 2024-2025 Hewlett Packard Enterprise Development LP
+# (C) Copyright 2020-2022, 2024-2026 Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -24,7 +24,7 @@
 # Dockerfile for cray-console-operator service
 
 # Build will be where we build the go binary
-FROM artifactory.algol60.net/docker.io/library/golang:1.23-alpine AS build
+FROM artifactory.algol60.net/docker.io/library/golang:1.25-alpine AS build
 RUN set -eux \
     && apk add --upgrade --no-cache apk-tools \
     && apk update \
