@@ -25,7 +25,7 @@ module github.com/Cray-HPE/console-operator
 go 1.25.0
 
 require (
-	github.com/go-chi/chi/v5 v5.2.4
+	github.com/go-chi/chi/v5 v5.4.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/tidwall/gjson v1.9.3
 	k8s.io/api v0.24.17
